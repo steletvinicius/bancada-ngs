@@ -1,4 +1,8 @@
 {
-  "atualizadoEm": "2026-10-31",
-  "tecnicos": []
+  "atualizadoEm": "31/10/2026",
+  "tecnicos": [
+    { "nome": "Aline Diniz" },
+    { "nome": "Evangeline" },
+    { "nome": "Vinicius Stelet" }
+  ]
 }
