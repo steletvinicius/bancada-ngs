@@ -1,4 +1,10 @@
 {
-  "atualizadoEm": "2026-10-31",
-  "termocicladores": []
+  "atualizadoEm": "31/10/2026",
+  "termocicladores": [
+    { "id": "E45", "descricao": "Veriti 96 well" },
+    { "id": "E46", "descricao": "Veriti 96 well" },
+    { "id": "E47", "descricao": "Veriti 96 well" },
+    { "id": "E48", "descricao": "Veriti 96 well" },
+    { "id": "E49", "descricao": "Veriti 96 well" }
+  ]
 }
