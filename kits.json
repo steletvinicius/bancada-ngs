@@ -52,7 +52,7 @@
     },
     {
       "id": "ngsgo-mx6-meia-receita",
-      "nome": "Painel de amplicon genérico (exemplo)",
+      "nome": "NGSgo 6 loci - meia receita",
       "versao": "0.2",
       "descricao": "Protocolo para amplificação de 6 genes HLA (HLA-A, -B, -C, -DRB1, -DQB1, -DPB1).",
       "qc": {
