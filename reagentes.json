@@ -1,4 +1,9 @@
 {
-  "atualizadoEm": "2026-10-31",
-  "reagentes": []
+  "atualizadoEm": "31/10/2026",
+  "reagentes": [
+    { "nome": "Alltype Buffer", "lote": "TB-2410", "validade": "31/12/2026" },
+    { "nome": "Alltype dNTP", "lote": "DN-0925", "validade": "30/04/2027" },
+    { "nome": "Alltype Primer", "lote": "P-118", "validade": "15/03/2027" },
+    { "nome": "Alltype polimerase", "lote": "L2611", "validade": "30/06/2027" }
+  ]
 }
