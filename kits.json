@@ -59,9 +59,9 @@
         "concMinima": 5
       },
       "normalizacao": {
-        "concAlvo": 5,
-        "volumeFinal": 5,
-        "modoPadrao": "bench",
+        "concAlvo": 15,
+        "volumeFinal": 4.13,
+        "modoPadrao": "qiagility",
         "volumeMinimoRobo": 1,
         "volumeMortoDiluente": 15,
         "abaixoDoAlvoUsarPuro": true,
@@ -75,8 +75,8 @@
       },
       "masterMix": {
         "nome": "Painel",
-        "volumeReacao": 20,
-        "volumeDNA": 5,
+        "volumeReacao": 7.50,
+        "volumeDNA": 4.13,
         "excedentePercentual": 10,
         "reagentes": [
           { "nome": "GenDx LongMix (4x)", "volumePorAmostra": 1.8 },
