@@ -1,0 +1,70 @@
+{
+  "atualizadoEm": "31/10/2026",
+  "descricao": "Estrutura comum a todos os protocolos pré-PCR. O que muda entre kits fica em kits.json.",
+  "etapas": [
+    {
+      "id": "bateria",
+      "nome": "Bateria de testes",
+      "tipo": "intake",
+      "descricao": "Consolide a lista do LIMS (TXT) com os mapas de trabalho (PDF): ordem dos testes, localização no estoque e quantificação.",
+      "checklist": [
+        { "texto": "Lista do LIMS (TXT) carregada", "auto": "txt-loaded" },
+        { "texto": "Mapas de trabalho (PDF) carregados", "auto": "maps-loaded" },
+        { "texto": "Bateria consolidada sem pendências", "auto": "intake-ok" },
+        "Separar as placas/caixas de estoque indicadas e conferir as posições."
+      ]
+    },
+    {
+      "id": "normalizacao",
+      "nome": "Normalização do DNA genômico",
+      "tipo": "normalize",
+      "descricao": "Normalização das amostras iniciais de DNA. A concentração alvo e os volumes vêm do kit selecionado.",
+      "checklistQIAgility": [
+        { "texto": "Arquivo .QAS gerado no app", "auto": "qas-generated" },
+        "Descongelar as placas de estoque indicadas e centrifugar brevemente.",
+        "Montar o deck conforme o diagrama: ponteiras, placa de reação, diluente, microtubo do CP e placas de estoque.",
+        "Retirar o selo somente das fileiras indicadas em cada placa de estoque.",
+        "Abrir o arquivo .QAS no software do QIAgility e conferir o relatório pré-corrida.",
+        "Executar a corrida e conferir ausência de erros de ponteira ou de volume.",
+        { "texto": "Relatório pós-corrida (.htm) carregado e validado", "auto": "postrun-ok" },
+        { "texto": "Adicionar à mão os itens sinalizados nos poços indicados.", "quando": "has-manual" },
+        "Selar de novo as fileiras abertas e devolver as placas ao armazenamento."
+      ],
+      "checklistBancada": [
+        "Identificar tubos ou placa intermediária para o DNA normalizado.",
+        "Dispensar a água livre de nuclease indicada em cada posição.",
+        "Fazer as pré-diluições sinalizadas antes de seguir.",
+        "Adicionar o volume de DNA indicado e homogeneizar por pipetagem.",
+        "Transferir o volume de reação de cada DNA normalizado para o poço indicado da placa de reação.",
+        { "texto": "Adicionar à mão os itens sinalizados nos poços indicados.", "quando": "has-manual" }
+      ]
+    },
+    {
+      "id": "pcr-mm",
+      "nome": "Master mix da PCR",
+      "tipo": "mastermix",
+      "descricao": "Master mix do kit selecionado. O número de reações vem da bateria (amostras + controles) mais o excedente.",
+      "checklist": [
+        "Trabalhar em cabine limpa, com UV prévio, na área pré-PCR.",
+        "Descongelar tampão, dNTP e primers em gelo; manter a polimerase a −20 °C até o uso.",
+        "Montar o master mix: água primeiro, polimerase por último.",
+        "Homogeneizar por pipetagem suave e centrifugar brevemente.",
+        { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" }
+      ]
+    },
+    {
+      "id": "placa-pcr",
+      "nome": "Placa de PCR",
+      "tipo": "plate",
+      "descricao": "Mapa da placa de reação, com as mesmas posições da normalização.",
+      "checklist": [
+        { "texto": "Termociclador registrado", "auto": "cycler-set" },
+        "Dispensar o master mix em cada poço ocupado do mapa.",
+        "Conferir que o DNA normalizado está nos poços indicados.",
+        "Selar, centrifugar brevemente e conferir ausência de bolhas.",
+        "Levar ao termociclador e transferir para a área pós-PCR ao final.",
+        { "texto": "Pacote para o pós-PCR gerado", "auto": "handoff-done" }
+      ]
+    }
+  ]
+}

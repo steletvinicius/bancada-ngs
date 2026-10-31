@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bancada NGS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: portal de módulos do laboratório — um cartão por área (pré-PCR, pós-PCR), na ordem do fluxo */
+:root{
+  --bg:#EEF2F5; --surface:#FFFFFF; --ink:#14202A; --muted:#566573; --line:#D3DCE3;
+  --pre:#0A6A86; --pre-bg:#E2F0F5; --post:#AE3A2D; --post-bg:#F8E6E3;
+  --f-display:"Archivo",system-ui,sans-serif; --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0E141A; --surface:#16202A; --ink:#E3EAF0; --muted:#94A3B0; --line:#2A3743; --pre:#5BB8D6; --pre-bg:#123040; --post:#EC8174; --post-bg:#3A1D1A; color-scheme:dark; }}
+:root[data-theme="dark"]{ --bg:#0E141A; --surface:#16202A; --ink:#E3EAF0; --muted:#94A3B0; --line:#2A3743; --pre:#5BB8D6; --pre-bg:#123040; --post:#EC8174; --post-bg:#3A1D1A; color-scheme:dark; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+main{max-width:920px;margin:0 auto;padding:48px 16px;display:flex;flex-direction:column;gap:28px}
+h1,h2{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:32px}
+.lede{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.mod{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;min-width:0}
+a.mod:hover{border-color:var(--pre)}
+a.mod:focus-visible{outline:2px solid var(--pre);outline-offset:2px}
+.tag{align-self:start;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.pre .tag{background:var(--pre-bg);color:var(--pre)} .post .tag{background:var(--post-bg);color:var(--post)}
+.mod h2{font-size:21px}
+.mod ol{margin:0;padding-left:20px;color:var(--muted);font-size:14px}
+.go{font-weight:700;color:var(--pre)} .post .go{color:var(--muted)}
+.post{opacity:.85}
+.note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+.mono{font-family:var(--f-mono);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Bancada NGS</h1>
+    <p class="lede">Protocolos de preparo de bibliotecas para sequenciamento, divididos pela área do laboratório. Cada área entrega à seguinte um pacote com o mapa da placa.</p>
+  </header>
+  <section class="flow" aria-label="Módulos">
+    <a class="mod pre" href="pre-pcr.html">
+      <span class="tag">Área pré-PCR</span>
+      <h2>Pré-PCR</h2>
+      <ol><li>Bateria de testes (lista do LIMS + mapas)</li><li>Normalização do DNA genômico (QIAgility ou bancada)</li><li>Master mix da PCR multiplex</li><li>Placa de PCR</li></ol>
+      <span class="go">Abrir módulo →</span>
+    </a>
+    <a class="mod post" href="pos-pcr.html">
+      <span class="tag">Área pós-PCR</span>
+      <h2>Pós-PCR</h2>
+      <ol><li>Recebe o pacote <span class="mono">_pre-pcr.json</span></li><li>Purificação, quantificação, indexação e pool</li></ol>
+      <span class="go">Em construção</span>
+    </a>
+  </section>
+  <p class="note">Os arquivos carregados (listas, mapas, relatórios) são processados somente no navegador de quem usa o app. Nada é enviado a servidores.</p>
+</main>
+</body>
+</html>

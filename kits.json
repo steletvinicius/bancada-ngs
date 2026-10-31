@@ -1,0 +1,94 @@
+{
+  "atualizadoEm": "31/10/2026",
+  "kits": [
+    {
+      "id": "altype-ngs-11-loci-meia",
+      "nome": "Altype NGS 11 Loci - meia receita",
+      "versao": "0.3",
+      "descricao": "Genotipagem HLA de 11 loci amplificados juntos em um único poço (meia receita).",
+      "qc": {
+        "concMinima": 7,
+        "razao260280Min": 1.6,
+        "razao260280Max": 2.1
+      },
+      "normalizacao": {
+        "concAlvo": 7,
+        "volumeFinal": 4.3,
+        "modoPadrao": "qiagility",
+        "volumeMinimoRobo": 1,
+        "volumeMortoDiluente": 15,
+        "abaixoDoAlvoUsarPuro": true,
+        "ajusteAutomatico": true,
+        "itensManuaisNoFim": true,
+        "bancada": {
+          "volumePreparo": 20,
+          "volumeMinimo": 1,
+          "volumeMaximo": 100
+        }
+      },
+      "masterMix": {
+        "nome": "HLA multiplex",
+        "volumeReacao": 25,
+        "volumeDNA": 4.3,
+        "excedentePercentual": 10,
+        "reagentes": [
+          { "nome": "Tampão de PCR 5×", "volumePorAmostra": 5 },
+          { "nome": "dNTP mix 10 mM", "volumePorAmostra": 0.5 },
+          { "nome": "Pool de primers HLA multiplex", "volumePorAmostra": 2 },
+          { "nome": "DNA polimerase", "volumePorAmostra": 0.5 },
+          { "nome": "Água livre de nuclease", "volumePorAmostra": 12.7 }
+        ]
+      },
+      "termociclagem": [
+        { "etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1" },
+        { "etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30" },
+        { "etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": "" },
+        { "etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": "" },
+        { "etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1" },
+        { "etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": "" }
+      ],
+      "avisos": [
+        "Reagentes, volumes e termociclagem de exemplo: substitua pelos do kit validado."
+      ]
+    },
+    {
+      "id": "amplicon-generico",
+      "nome": "Painel de amplicon genérico (exemplo)",
+      "versao": "0.2",
+      "descricao": "Exemplo de outro kit: muda só normalização, reagentes e termociclagem.",
+      "qc": {
+        "concMinima": 5
+      },
+      "normalizacao": {
+        "concAlvo": 5,
+        "volumeFinal": 5,
+        "modoPadrao": "bench",
+        "volumeMinimoRobo": 1,
+        "volumeMortoDiluente": 15,
+        "abaixoDoAlvoUsarPuro": true,
+        "ajusteAutomatico": true,
+        "itensManuaisNoFim": true,
+        "bancada": {
+          "volumePreparo": 10,
+          "volumeMinimo": 1,
+          "volumeMaximo": 100
+        }
+      },
+      "masterMix": {
+        "nome": "Painel",
+        "volumeReacao": 20,
+        "volumeDNA": 5,
+        "excedentePercentual": 10,
+        "reagentes": [
+          { "nome": "Master mix 2×", "volumePorAmostra": 10 },
+          { "nome": "Pool de primers", "volumePorAmostra": 2 },
+          { "nome": "Água livre de nuclease", "volumePorAmostra": 3 }
+        ]
+      },
+      "termociclagem": [],
+      "avisos": [
+        "Kit de exemplo."
+      ]
+    }
+  ]
+}
