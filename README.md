@@ -6,7 +6,7 @@ Apps web para o preparo de bibliotecas NGS, divididos pela área do laboratório
 |---|---|
 | `index.html` | Portal com os módulos |
 | `pre-pcr.html` | Módulo pré-PCR: bateria de testes → normalização do DNA genômico → master mix → placa de PCR |
-| `pos-pcr.html` | Módulo pós-PCR: amplicons da PCR (um ou vários pacotes `_pre-pcr.json`, completos ou parciais) → purificação AMPure |
+| `pos-pcr.html` | Módulo pós-PCR: amplicons da PCR (um ou vários pacotes `_pre-pcr.json`, completos ou parciais) → purificação AMPure → quantificação Qubit e diluição → master mix de fragmentação |
 
 ## Arquivos de dados (editáveis)
 
@@ -72,7 +72,23 @@ O seletor **Protocolo** lista os kits; o app monta o protocolo juntando o fluxo 
           "volumeTransferencia": 12.5,
           "excedentePercentual": 10,
           "reagentes": { "beads": "AMPure XP beads", "etanol": "Etanol absoluto", "eluicao": "Low TE" },
+          "excedenteEtanolPercentual": 20,
           "tempos": { "ambientarBeadsMin": 30, "ligacaoMin": 5, "etanolSeg": 30, "eluicaoMin": 2 }
+        },
+        "quantificacao": {
+          "metodo": "Qubit dsDNA BR", "volumeInput": 1, "massaAlvo": 50, "volumeFinal": 17.5,
+          "diluente": "Água livre de nuclease", "volumeMinimo": 1, "casasDecimais": 1,
+          "fracaoAmostragem": 0.30, "fracaoFaixa": 0.15, "faixaMin": 20, "faixaMax": 50,
+          "qubit": { "padroes": 2, "volumePadrao": 10, "volumeTrabalho": 200, "diluicaoReagente": 200, "excedentePercentual": 10 },
+          "reagentes": { "kit": "Qubit dsDNA BR Assay Kit" },
+          "tempos": { "incubacaoMin": 2 }
+        },
+        "mixFragmentacao": {
+          "nome": "Mix de fragmentação", "volumeAmostra": 17.5, "excedentePercentual": 10,
+          "reagentes": [
+            { "nome": "AllType Fragmentase", "volumePorAmostra": 4.5 },
+            { "nome": "AllType Fragmentation Buffer", "volumePorAmostra": 2.5 }
+          ]
         }
       }
     }
@@ -83,18 +99,21 @@ O seletor **Protocolo** lista os kits; o app monta o protocolo juntando o fluxo 
 - Volumes em µL; concentrações em ng/µL. `volumePorAmostra` é o volume de cada reagente por reação; o app multiplica pelo número de reações + excedente.
 - A soma dos reagentes + `volumeDNA` deve dar `volumeReacao`; o app avisa se não fechar.
 - `modoPadrao`: `"qiagility"` ou `"bancada"`.
-- Em `posPcr.limpezaAmplicons`, o volume de beads por poço é `razaoBeads × volumeAmostra`; os nomes em `reagentes` são os usados para escolher o lote.
+- Em `posPcr.limpezaAmplicons`, o volume de beads por poço é `razaoBeads × volumeAmostra`; os nomes em `reagentes` são os usados para escolher o lote. `excedenteEtanolPercentual` é a margem do etanol 75% (independente do excedente das beads).
+- Em `posPcr.quantificacao`: o app sugere quantificar os controles + `fracaoAmostragem` das amostras; `fracaoFaixa` delas na faixa de DNA inicial `faixaMin`–`faixaMax` ng/µL e o restante nos extremos (mais baixa e mais alta). Volume de amplicon = `massaAlvo` ÷ concentração, completado com `diluente` até `volumeFinal`; poços sem leitura usam a mediana das leituras.
+- Um kit sem o bloco `posPcr` (ou sem um dos sub-blocos) mostra a etapa correspondente como “sem parâmetros”.
 - Para um kit novo, copie um bloco `{ … }` inteiro, mude `id` e `nome`, e separe os kits com vírgula. Evite mudar o `id` de um kit em uso: as corridas e os pacotes guardam esse id.
 
 ### `fluxo-pre-pcr.json` e `fluxo-pos-pcr.json`
 
-Lista `etapas`, cada uma com `id`, `nome`, `tipo` e checklist. Tipos: `intake` (bateria), `normalize`, `mastermix`, `plate` no pré-PCR; `handoff` (pacotes do pré-PCR) e `cleanup` (purificação com beads, com `"parametros": "limpezaAmplicons"`) no pós-PCR.
+Lista `etapas`, cada uma com `id`, `nome`, `tipo` e checklist. Tipos: `intake` (bateria), `normalize`, `mastermix`, `plate` no pré-PCR; `handoff` (pacotes do pré-PCR), `cleanup` (purificação com beads), `quant` (quantificação e diluição) e `mix` (mix com reagentes por poço, ex.: fragmentação) no pós-PCR. Nas etapas do pós-PCR, `"parametros"` aponta o sub-bloco de `posPcr` do kit.
 
 - Um item de texto é um passo de bancada que o técnico marca.
-- `{ "texto": "...", "auto": "<chave>" }` é marcado pelo app quando ele comprova a ação: `txt-loaded`, `maps-loaded`, `intake-ok`, `qas-generated`, `postrun-ok`, `lots-ok`, `cycler-set`, `handoff-done`, `pkg-loaded`, `pkg-ok`.
+- `{ "texto": "...", "auto": "<chave>" }` é marcado pelo app quando ele comprova a ação: `txt-loaded`, `maps-loaded`, `intake-ok`, `qas-generated`, `postrun-ok`, `lots-ok`, `cycler-set`, `handoff-done`, `pkg-loaded`, `pkg-ok`, `quant-sel`, `quant-done`.
 - `"quando": "has-manual"` faz o item aparecer só quando há poços a completar à mão.
 - `"timer": "ligacaoMin"` dá cronômetro ao item (chaves de `tempos` terminadas em `Min` são minutos; em `Seg`, segundos). `"alerta": true` destaca o item.
-- Nos textos do pós-PCR, `{beads}`, `{amostra}`, `{razao}`, `{etanol}`, `{etanolPct}`, `{eluicao}`, `{transferencia}`, `{reagenteBeads}`, `{reagenteEluicao}` e os nomes em `tempos` são trocados pelos valores do kit.
+- `"icone": "magneto"` (placa na rack magnética) ou `"icone": "gelo"` mostra o ícone ao lado do passo; a etapa exibe no topo os ícones dos seus passos. `"icones": ["gelo"]` na etapa força o ícone no topo.
+- Nos textos do pós-PCR, `{beads}`, `{amostra}`, `{razao}`, `{etanol}`, `{etanolPct}`, `{eluicao}`, `{transferencia}`, `{reagenteBeads}`, `{reagenteEluicao}` `{etanolTotal}`, `{etanolAbs}`, `{etanolAgua}`, `{etanolMargem}`, `{reagenteEtanol}` (purificação); `{input}`, `{massa}`, `{volumeFinal}`, `{trabalhoTotal}`, `{trabalhoReagente}`, `{trabalhoTampao}`, `{tubosQubit}`, `{volTrabalhoAmostra}`, `{volTrabalhoPadrao}`, `{volPadrao}`, `{reagenteQubit}` (quantificação); `{mixPorPoco}`, `{amostra}`, `{reagente1}`, `{reagente2}` (mix); e os nomes em `tempos` são trocados pelos valores do kit.
 - Não mude o `id` das etapas: as corridas salvas usam esses ids.
 
 ### `tecnicos.json`, `reagentes.json`, `termocicladores.json`

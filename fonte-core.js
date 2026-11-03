@@ -124,6 +124,12 @@ function normalizeAuto(r, c) {
     const fc = r.conc * c.minVol / c.finalVol;
     return { ...o, vDNA: c.minVol, vDil: c.finalVol - c.minVol, finalConc: fc, adjusted: true, status: ['warn', `Ajustado: final ${brNum(fc)} ng/µL`] };
   }
+  // O mesmo limite vale para o diluente: se faltaria menos que o mínimo, o robô pipeta só DNA (puro)
+  // no volume final e a concentração final fica igual à do estoque (poço marcado com *).
+  if (c.finalVol - vDNA > 0 && c.finalVol - vDNA < c.minVol) {
+    if (!c.autoAdjust) return { ...o, vDNA, vDil: c.finalVol - vDNA, finalConc: c.target, status: ['bad', `Diluente < ${brNum(c.minVol)} µL sem ajuste automático`] };
+    return { ...o, vDNA: c.finalVol, vDil: 0, finalConc: r.conc, adjusted: true, status: ['warn', `Ajustado: diluente < ${brNum(c.minVol)} µL, DNA puro (${brNum(r.conc)} ng/µL)`] };
+  }
   return { ...o, vDNA, vDil: c.finalVol - vDNA, finalConc: c.target, status: ['ok', 'OK'] };
 }
 function normalizeBench(r, c) {

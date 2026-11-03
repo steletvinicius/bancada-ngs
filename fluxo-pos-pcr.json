@@ -20,30 +20,74 @@
       "area": "pos-pcr",
       "tipo": "cleanup",
       "parametros": "limpezaAmplicons",
-      "descricao": "Lavagem dos amplicons com beads AMPure na proporção do kit, duas lavagens com etanol e eluição em Low TE.",
+      "descricao": "Lavagem dos amplicons com beads AMPure na proporção do kit, duas lavagens com etanol 75% e eluição em Low TE. Os passos com o ímã são feitos com a placa na rack magnética.",
       "checklist": [
         { "texto": "Retirar as beads ({reagenteBeads}) da geladeira e deixar em temperatura ambiente por {ambientarBeadsMin} min.", "timer": "ambientarBeadsMin" },
-        "Enquanto isso, preparar o etanol {etanolPct}% fresco (volume na tabela de preparo).",
+        { "texto": "Preparar o etanol {etanolPct}% fresco: {etanolAgua} de água livre de nuclease + {etanolAbs} de {reagenteEtanol} ({etanolTotal}, margem de {etanolMargem}%). Ver o quadro de preparo." },
         { "texto": "Lotes e validades dos reagentes registrados, nenhum vencido", "auto": "lots-ok" },
         "Homogeneizar bem as beads e adicionar {beads} µL a cada poço com {amostra} µL de amplicon ({razao}×).",
         "Homogeneizar por pipetagem ou vórtex e dar spin brando.",
         { "texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin" },
-        "Colocar a placa na rack magnética até separar as beads e manter a placa na rack.",
-        "Aspirar e descartar o sobrenadante sem tocar nem aspirar as beads.",
-        "Adicionar {etanol} µL de etanol {etanolPct}%.",
-        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg" },
-        "Aspirar e descartar o sobrenadante.",
-        "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).",
-        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg" },
-        "Aspirar e descartar o sobrenadante.",
-        "Retirar o sobrenadante residual com ponteira de 10 µL.",
+        { "texto": "Colocar a placa na rack magnética até separar as beads e manter a placa na rack.", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante sem tocar nem aspirar as beads.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}%.", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Retirar o sobrenadante residual com ponteira de 10 µL.", "icone": "magneto" },
         "Retirar a placa da rack magnética e deixar o etanol residual evaporar.",
         { "texto": "Não deixar as beads secarem demais.", "alerta": true },
         "Adicionar {eluicao} µL de {reagenteEluicao} sobre o pellet de beads.",
         "Homogeneizar por pipetagem até dissolver o pellet de beads.",
         { "texto": "Incubar {eluicaoMin} min em temperatura ambiente.", "timer": "eluicaoMin" },
-        "Colocar a placa na rack magnética e aguardar a separação das beads.",
-        "Transferir {transferencia} µL do sobrenadante para a placa nova, nos poços indicados no mapa."
+        { "texto": "Colocar a placa na rack magnética e aguardar a separação das beads.", "icone": "magneto" },
+        { "texto": "Transferir {transferencia} µL do sobrenadante para a placa nova, nos poços indicados no mapa.", "icone": "magneto" }
+      ]
+    },
+    {
+      "id": "quantificacao-amplicons",
+      "nome": "Quantificação e diluição dos amplicons",
+      "area": "pos-pcr",
+      "tipo": "quant",
+      "parametros": "quantificacao",
+      "descricao": "Quantificação de parte dos amplicons purificados no Qubit dsDNA BR (1 µL de amplicon) e diluição de todos os poços para a massa e o volume do kit. Poços não quantificados usam a mediana dos medidos.",
+      "checklist": [
+        { "texto": "Amplicons a quantificar escolhidos (controles + amostragem)", "auto": "quant-sel" },
+        { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
+        "Deixar os padrões e o {reagenteQubit} em temperatura ambiente antes de usar.",
+        "Preparar a solução de trabalho: {trabalhoReagente} de reagente + {trabalhoTampao} de tampão ({trabalhoTotal} para {tubosQubit} tubos), em tubo plástico, protegido da luz.",
+        "Identificar os tubos do Qubit na tampa (não na parede).",
+        "Padrões: {volTrabalhoPadrao} µL de solução de trabalho + {volPadrao} µL de cada padrão.",
+        "Amplicons: {volTrabalhoAmostra} µL de solução de trabalho + {input} µL de cada amplicon purificado selecionado.",
+        "Homogeneizar no vórtex por 2–3 s e dar spin rápido.",
+        { "texto": "Incubar {incubacaoMin} min em temperatura ambiente, protegido da luz.", "timer": "incubacaoMin" },
+        "Ler os padrões e os amplicons no Qubit (volume de amostra: {input} µL).",
+        { "texto": "Leituras registradas e volumes calculados para todos os poços", "auto": "quant-done" },
+        "Em uma placa nova, pipetar o diluente e depois o amplicon de cada poço, conforme o mapa de pipetagem ({massa} ng em {volumeFinal} µL).",
+        "Homogeneizar por pipetagem, selar e dar spin brando."
+      ]
+    },
+    {
+      "id": "mix-fragmentacao",
+      "nome": "Master mix de fragmentação",
+      "area": "pos-pcr",
+      "tipo": "mix",
+      "parametros": "mixFragmentacao",
+      "icones": [
+        "gelo"
+      ],
+      "descricao": "Preparo e dispensação do mix de fragmentação sobre os amplicons normalizados. Reagentes e placa no gelo durante toda a manipulação.",
+      "checklist": [
+        { "texto": "Colocar a placa com os amplicons normalizados no gelo e mantê-la no gelo durante toda a manipulação.", "icone": "gelo", "alerta": true },
+        { "texto": "Manter {reagente1} e {reagente2} no gelo.", "icone": "gelo" },
+        { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
+        { "texto": "Preparar o mix em microtubo no gelo, nos volumes da tabela.", "icone": "gelo" },
+        { "texto": "O mix é viscoso: homogeneizar bem por pipetagem lenta, sem formar bolhas.", "alerta": true },
+        { "texto": "Dispensar {mixPorPoco} µL do mix em cada poço com {amostra} µL de amplicon normalizado.", "icone": "gelo" },
+        { "texto": "Homogeneizar bem por pipetagem em cada poço (mix viscoso).", "alerta": true },
+        { "texto": "Selar a placa, dar spin brando e manter no gelo.", "icone": "gelo" }
       ]
     }
   ]

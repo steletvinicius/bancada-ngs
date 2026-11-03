@@ -24,5 +24,7 @@ for mod, out, flow_file, title in [('pre', 'pre-pcr.html', 'fluxo-pre-pcr.json',
                .replace('<title>Bancada NGS Pré-PCR</title>', f'<title>{title}</title>', 1))
     assert '/*__' not in body, 'marcador não substituído'
     (root / out).write_text(head + body + '\n</body>\n</html>\n', encoding='utf-8')
-    (root / 'dist' / out.replace('.html', '-artifact.html')).write_text(body, encoding='utf-8')
+    # na prévia (artifact) não há o portal index.html: o atalho para a Home só existe no site
+    art = '\n'.join(l for l in body.split('\n') if 'data-home' not in l)
+    (root / 'dist' / out.replace('.html', '-artifact.html')).write_text(art, encoding='utf-8')
     print(out, 'gerado')

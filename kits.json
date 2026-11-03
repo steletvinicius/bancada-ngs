@@ -70,7 +70,48 @@
             "ligacaoMin": 5,
             "etanolSeg": 30,
             "eluicaoMin": 2
+          },
+          "excedenteEtanolPercentual": 20
+        },
+        "quantificacao": {
+          "nome": "Quantificação dos amplicons purificados",
+          "metodo": "Qubit dsDNA BR",
+          "volumeInput": 1,
+          "massaAlvo": 50,
+          "volumeFinal": 17.5,
+          "diluente": "Água livre de nuclease",
+          "volumeMinimo": 1,
+          "casasDecimais": 1,
+          "fracaoAmostragem": 0.3,
+          "fracaoFaixa": 0.15,
+          "faixaMin": 20,
+          "faixaMax": 50,
+          "qubit": {
+            "padroes": 2,
+            "volumePadrao": 10,
+            "volumeTrabalho": 200,
+            "diluicaoReagente": 200,
+            "excedentePercentual": 10
+          },
+          "reagentes": {
+            "kit": "Qubit dsDNA BR Assay Kit"
+          },
+          "tempos": {
+            "incubacaoMin": 2
           }
+        },
+        "mixFragmentacao": {
+          "nome": "Mix de fragmentação",
+          "volumeAmostra": 17.5,
+          "excedentePercentual": 10,
+          "reagentes": [
+            { "nome": "AllType Fragmentase", "volumePorAmostra": 4.5 },
+            { "nome": "AllType Fragmentation Buffer", "volumePorAmostra": 2.5 }
+          ],
+          "avisos": [
+            "Mix viscoso: homogeneizar bem por pipetagem no preparo e na dispensação.",
+            "Reagentes e placa no gelo durante toda a manipulação."
+          ]
         }
       }
     },
@@ -119,31 +160,7 @@
       ],
       "avisos": [
         "Kit de exemplo."
-      ],
-      "posPcr": {
-        "limpezaAmplicons": {
-          "nome": "Purificação AMPure 0,6×",
-          "volumeAmostra": 10,
-          "razaoBeads": 0.6,
-          "volumeEtanol": 50,
-          "lavagensEtanol": 2,
-          "etanolPercentual": 75,
-          "volumeEluicao": 13.5,
-          "volumeTransferencia": 12.5,
-          "excedentePercentual": 10,
-          "reagentes": {
-            "beads": "AMPure XP beads",
-            "etanol": "Etanol absoluto",
-            "eluicao": "Low TE"
-          },
-          "tempos": {
-            "ambientarBeadsMin": 30,
-            "ligacaoMin": 5,
-            "etanolSeg": 30,
-            "eluicaoMin": 2
-          }
-        }
-      }
+      ]
     }
   ]
 }
