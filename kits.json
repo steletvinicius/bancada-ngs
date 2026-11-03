@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "31/10/2026",
+  "atualizadoEm": "03/11/2026",
   "kits": [
     {
       "id": "alltype-ngs-11-loci-meia",
@@ -48,7 +48,31 @@
       ],
       "avisos": [
         "Reagentes, volumes e termociclagem de exemplo: substitua pelos do kit validado."
-      ]
+      ],
+      "posPcr": {
+        "limpezaAmplicons": {
+          "nome": "Purificação AMPure 0,6×",
+          "volumeAmostra": 10,
+          "razaoBeads": 0.6,
+          "volumeEtanol": 50,
+          "lavagensEtanol": 2,
+          "etanolPercentual": 75,
+          "volumeEluicao": 13.5,
+          "volumeTransferencia": 12.5,
+          "excedentePercentual": 10,
+          "reagentes": {
+            "beads": "AMPure XP beads",
+            "etanol": "Etanol absoluto",
+            "eluicao": "Low TE"
+          },
+          "tempos": {
+            "ambientarBeadsMin": 30,
+            "ligacaoMin": 5,
+            "etanolSeg": 30,
+            "eluicaoMin": 2
+          }
+        }
+      }
     },
     {
       "id": "ngsgo-mx6-meia-receita",
@@ -75,11 +99,11 @@
       },
       "masterMix": {
         "nome": "Painel",
-        "volumeReacao": 7.50,
+        "volumeReacao": 7.5,
         "volumeDNA": 4.13,
         "excedentePercentual": 10,
         "reagentes": [
-          { "nome": "GenDx LongMix (4x)", "volumePorAmostra": 1.8 },
+          { "nome": "GenDx LongMix (4x)", "volumePorAmostra": 1.87 },
           { "nome": "NGSgo-Mx6-1 primer", "volumePorAmostra": 0.75 },
           { "nome": "Enhancer", "volumePorAmostra": 0.75 },
           { "nome": "Água livre de nuclease", "volumePorAmostra": 0 }
@@ -95,7 +119,31 @@
       ],
       "avisos": [
         "Kit de exemplo."
-      ]
+      ],
+      "posPcr": {
+        "limpezaAmplicons": {
+          "nome": "Purificação AMPure 0,6×",
+          "volumeAmostra": 10,
+          "razaoBeads": 0.6,
+          "volumeEtanol": 50,
+          "lavagensEtanol": 2,
+          "etanolPercentual": 75,
+          "volumeEluicao": 13.5,
+          "volumeTransferencia": 12.5,
+          "excedentePercentual": 10,
+          "reagentes": {
+            "beads": "AMPure XP beads",
+            "etanol": "Etanol absoluto",
+            "eluicao": "Low TE"
+          },
+          "tempos": {
+            "ambientarBeadsMin": 30,
+            "ligacaoMin": 5,
+            "etanolSeg": 30,
+            "eluicaoMin": 2
+          }
+        }
+      }
     }
   ]
 }

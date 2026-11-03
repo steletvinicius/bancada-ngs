@@ -1,22 +1,24 @@
 # Pacote pré-PCR → pós-PCR (versão 1)
 
-Arquivo JSON gerado no fim do módulo pré-PCR (etapa **Placa de PCR → Gerar pacote pós-PCR**). Nome: `<mapas>_pre-pcr.json`, por exemplo `LMX01012026EXA01PL01_pre-pcr.json`. Não contém nomes de pacientes.
+Arquivo JSON gerado no fim do módulo pré-PCR (etapa **Placa de PCR → Gerar pacote pós-PCR**), um por bateria. Nome: `<mapas>_pre-pcr.json`, por exemplo `LMX01012026EXA01PL01_pre-pcr.json`. Não contém nomes de pacientes.
+
+O pós-PCR aceita **vários pacotes na mesma rodada** e **parte dos poços de um pacote**. Cada pacote é identificado por `run.batch` + `generatedAt`; o pós-PCR guarda, no navegador, quais poços de cada pacote já entraram em alguma rodada.
 
 ```json
 {
   "schema": "bancada-ngs/pre-pcr-handoff",
   "version": 1,
   "generatedAt": "2026-10-31T13:40:00.000Z",
-  "protocol": { "id": "altype-ngs-11-loci-meia", "name": "Altype NGS 11 Loci - meia receita", "version": "0.3" },
+  "protocol": { "id": "alltype-ngs-11-loci-meia", "name": "Altype NGS 11 Loci - meia receita", "version": "0.3" },
   "run": { "name": "LMX01012026EXA01PL01", "batch": "LMX01012026EXA01PL01", "operator": "…", "date": "2026-10-31" },
   "thermocycler": { "id": "TC-03", "description": "…" },
-  "reagents": [ { "mix": "HLA multiplex", "component": "DNA polimerase", "reagent": "DNA polimerase", "lot": "L2611", "expiry": "2027-06-30" } ],
+  "reagents": [ { "mix": "Alltype multiplex", "component": "AllType Polimerase", "reagent": "AllType Polimerase", "lot": "L2611", "expiry": "2027-06-30" } ],
   "batch": { "mapCodes": ["LMX01012026EXA01", "LMX01012026PL01"], "qasFile": "LMX01012026EXA01PL01.QAS" },
   "normalization": {
     "mode": "qiagility", "targetConc": 7, "finalVol": 4.3, "minVol": 1,
     "postRun": { "file": "… Report AAAA-MM-DD_hh-mm-ss.htm", "result": "ok | warn | bad", "qasFile": "…", "robotSerial": "…", "start": "…", "stop": "…" }
   },
-  "pcr": { "mix": ["HLA multiplex"], "reactions": 9, "reactionVol": 25 },
+  "pcr": { "mix": ["Alltype multiplex"], "reactions": 9, "reactionVol": 10 },
   "plate": {
     "format": 96, "order": "column",
     "wells": [
@@ -37,4 +39,4 @@ Arquivo JSON gerado no fim do módulo pré-PCR (etapa **Placa de PCR → Gerar p
 | `thermocycler` | termociclador escolhido na etapa Placa de PCR (`null` se não informado) |
 | `validation` | resultado da conferência com o relatório pós-corrida: `ok`, `warn`, `bad`, `manual` ou `null` (sem relatório) |
 
-Mudanças incompatíveis aumentam `version`. O pós-PCR deve recusar `schema` desconhecido.
+Mudanças incompatíveis aumentam `version`. O pós-PCR recusa `schema` desconhecido.

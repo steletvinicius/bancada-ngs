@@ -1,0 +1,50 @@
+{
+  "atualizadoEm": "03/11/2026",
+  "descricao": "Estrutura comum a todos os protocolos pós-PCR. Volumes, proporções e tempos vêm de kits.json (seção posPcr do kit). Textos entre chaves, como {beads}, são preenchidos com os valores do kit.",
+  "etapas": [
+    {
+      "id": "amplicons",
+      "nome": "Amplicons da PCR",
+      "area": "pos-pcr",
+      "tipo": "handoff",
+      "descricao": "Importe um ou mais pacotes gerados no fim do pré-PCR e escolha os poços desta rodada: baterias inteiras, parte de uma bateria ou várias baterias juntas.",
+      "checklist": [
+        { "texto": "Pacote(s) do pré-PCR importado(s)", "auto": "pkg-loaded" },
+        { "texto": "Poços da rodada conferidos, sem divergência", "auto": "pkg-ok" },
+        "Retirar as placas do termociclador, dar spin e levar para a área pós-PCR."
+      ]
+    },
+    {
+      "id": "purificacao-amplicons",
+      "nome": "Purificação dos amplicons",
+      "area": "pos-pcr",
+      "tipo": "cleanup",
+      "parametros": "limpezaAmplicons",
+      "descricao": "Lavagem dos amplicons com beads AMPure na proporção do kit, duas lavagens com etanol e eluição em Low TE.",
+      "checklist": [
+        { "texto": "Retirar as beads ({reagenteBeads}) da geladeira e deixar em temperatura ambiente por {ambientarBeadsMin} min.", "timer": "ambientarBeadsMin" },
+        "Enquanto isso, preparar o etanol {etanolPct}% fresco (volume na tabela de preparo).",
+        { "texto": "Lotes e validades dos reagentes registrados, nenhum vencido", "auto": "lots-ok" },
+        "Homogeneizar bem as beads e adicionar {beads} µL a cada poço com {amostra} µL de amplicon ({razao}×).",
+        "Homogeneizar por pipetagem ou vórtex e dar spin brando.",
+        { "texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin" },
+        "Colocar a placa na rack magnética até separar as beads e manter a placa na rack.",
+        "Aspirar e descartar o sobrenadante sem tocar nem aspirar as beads.",
+        "Adicionar {etanol} µL de etanol {etanolPct}%.",
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg" },
+        "Aspirar e descartar o sobrenadante.",
+        "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).",
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg" },
+        "Aspirar e descartar o sobrenadante.",
+        "Retirar o sobrenadante residual com ponteira de 10 µL.",
+        "Retirar a placa da rack magnética e deixar o etanol residual evaporar.",
+        { "texto": "Não deixar as beads secarem demais.", "alerta": true },
+        "Adicionar {eluicao} µL de {reagenteEluicao} sobre o pellet de beads.",
+        "Homogeneizar por pipetagem até dissolver o pellet de beads.",
+        { "texto": "Incubar {eluicaoMin} min em temperatura ambiente.", "timer": "eluicaoMin" },
+        "Colocar a placa na rack magnética e aguardar a separação das beads.",
+        "Transferir {transferencia} µL do sobrenadante para a placa nova, nos poços indicados no mapa."
+      ]
+    }
+  ]
+}

@@ -82,6 +82,20 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mp .d.man{border:1.5px dashed var(--warn)}
 .mp .d.sealed{background:var(--line);border-color:var(--line)}
 .mp .d.sealed.on{opacity:.4}
+.pkgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:12px}
+.pkg{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pkg-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pkg-meta{font-size:12.5px;color:var(--muted)}
+.pick{max-width:340px}
+.pick button{font:inherit;cursor:pointer;padding:0}
+.pick .mh{border:0;background:transparent;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.pick .mh:hover{background:var(--sunk);color:var(--ink)}
+.pick .d.on{background:var(--pc);border-color:var(--pc)}
+.pick .d.claimed{border:1.5px dashed var(--warn)}
+.pick .d.bad{border:2px solid var(--bad)}
+.pick .d.ctl:not(.on){border-style:dotted}
+.pick .d.none{border-color:transparent;background:transparent}
+.seg button[disabled]{opacity:.45;cursor:not-allowed}
 .tubes{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;justify-items:center}
 .tube{display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
 .tube i{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface)}
@@ -168,6 +182,12 @@ td input.cell{width:64px}
 .checks li label:hover{background:var(--sunk)}
 .checks input{width:18px;height:18px;margin-top:2px;accent-color:var(--pre)}
 .checks .done-t{color:var(--muted);text-decoration:line-through}
+.checks li{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.checks li label{flex:1;min-width:0}
+.checks li.alert-item label{background:var(--warn-bg);color:var(--warn)}
+.timer{font-family:var(--f-mono);min-width:7.5em;justify-content:center}
+.timer.t-run{background:var(--pre);border-color:var(--pre);color:var(--surface)}
+.timer.t-done{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
 .autoline{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px}
 .abox{width:18px;height:18px;border-radius:4px;border:1.5px dashed var(--muted);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--surface)}
 .abox.on{background:var(--ok);border:1.5px solid var(--ok)}
@@ -236,8 +256,8 @@ dialog::backdrop{background:rgba(10,16,22,.5)}
 
 <header class="runbar">
   <div class="brand">
-    <h1>Bancada NGS · Pré-PCR</h1>
-    <span>Do DNA genômico à placa de PCR multiplex</span>
+    <h1 id="brand-h">Bancada NGS · Pré-PCR</h1>
+    <span id="brand-s">Do DNA genômico à placa de PCR multiplex</span>
   </div>
   <label class="field f-batch"><span class="label">Bateria de PCR</span><input id="f-run" data-bind="meta.name" placeholder="ex.: LMX19102026CEMOCT05PL05" autocomplete="off"></label>
   <label class="field"><span class="label">Protocolo</span><select id="f-proto"></select></label>
@@ -671,7 +691,9 @@ const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 };
-const RUN_KEY = 'bancadaNGS.run.v3', FLOW_KEY = 'bancadaNGS.fluxoLocal.v1', KITS_KEY = 'bancadaNGS.kitsLocal.v1', TPL_KEY = 'bancadaNGS.qasTemplate.v1', PREF_KEY = 'bancadaNGS.prefs.v1';
+const MODULE = 'pre';   // 'pre' = pré-PCR, 'pos' = pós-PCR (mesmo motor, fluxos diferentes)
+const FLOW_NAME = MODULE === 'pos' ? 'fluxo-pos-pcr.json' : 'fluxo-pre-pcr.json';
+const RUN_KEY = MODULE === 'pos' ? 'bancadaNGS.runPos.v1' : 'bancadaNGS.run.v3', FLOW_KEY = 'bancadaNGS.fluxoLocal.v1' + (MODULE === 'pos' ? '.pos' : ''), KITS_KEY = 'bancadaNGS.kitsLocal.v1', TPL_KEY = 'bancadaNGS.qasTemplate.v1', PREF_KEY = 'bancadaNGS.prefs.v1';
 /* versões anteriores guardavam nomes completos: apaga */
 try { ['bancadaNGS.run.v1', 'bancadaNGS.run.v2', 'bancadaNGS.prefs.v1'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
 const KIND = { sample: ['info', 'Amostra'], cp: ['warn', 'Controle +'], cn: ['ok', 'Controle −'], ctl: ['warn', 'Controle'] };
@@ -684,13 +706,13 @@ const NORM_DEFAULT = { mode: 'qiagility', target: 7, finalVol: 4.3, allowBelow: 
    O fluxo traz as etapas e checklists, iguais para todos; o kit traz só o que muda: QC, normalização, reagentes e volumes, termociclagem.
    As cópias embutidas abaixo são usadas só se os arquivos do site não puderem ser lidos. */
 const FLOW_FILE = {"atualizadoEm": "31/10/2026", "descricao": "Estrutura comum a todos os protocolos pré-PCR. O que muda entre kits fica em kits.json.", "etapas": [{"id": "bateria", "nome": "Bateria de testes", "tipo": "intake", "descricao": "Consolide a lista do LIMS (TXT) com os mapas de trabalho (PDF): ordem dos testes, localização no estoque e quantificação.", "checklist": [{"texto": "Lista do LIMS (TXT) carregada", "auto": "txt-loaded"}, {"texto": "Mapas de trabalho (PDF) carregados", "auto": "maps-loaded"}, {"texto": "Bateria consolidada sem pendências", "auto": "intake-ok"}, "Separar as placas/caixas de estoque indicadas e conferir as posições."]}, {"id": "normalizacao", "nome": "Normalização do DNA genômico", "tipo": "normalize", "descricao": "Normalização das amostras iniciais de DNA. A concentração alvo e os volumes vêm do kit selecionado.", "checklistQIAgility": [{"texto": "Arquivo .QAS gerado no app", "auto": "qas-generated"}, "Descongelar as placas de estoque indicadas e centrifugar brevemente.", "Montar o deck conforme o diagrama: ponteiras, placa de reação, diluente, microtubo do CP e placas de estoque.", "Retirar o selo somente das fileiras indicadas em cada placa de estoque.", "Abrir o arquivo .QAS no software do QIAgility e conferir o relatório pré-corrida.", "Executar a corrida e conferir ausência de erros de ponteira ou de volume.", {"texto": "Relatório pós-corrida (.htm) carregado e validado", "auto": "postrun-ok"}, {"texto": "Adicionar à mão os itens sinalizados nos poços indicados.", "quando": "has-manual"}, "Selar de novo as fileiras abertas e devolver as placas ao armazenamento."], "checklistBancada": ["Identificar tubos ou placa intermediária para o DNA normalizado.", "Dispensar a água livre de nuclease indicada em cada posição.", "Fazer as pré-diluições sinalizadas antes de seguir.", "Adicionar o volume de DNA indicado e homogeneizar por pipetagem.", "Transferir o volume de reação de cada DNA normalizado para o poço indicado da placa de reação.", {"texto": "Adicionar à mão os itens sinalizados nos poços indicados.", "quando": "has-manual"}]}, {"id": "pcr-mm", "nome": "Master mix da PCR", "tipo": "mastermix", "descricao": "Master mix do kit selecionado. O número de reações vem da bateria (amostras + controles) mais o excedente.", "checklist": ["Trabalhar em cabine limpa, com UV prévio, na área pré-PCR.", "Descongelar tampão, dNTP e primers em gelo; manter a polimerase a −20 °C até o uso.", "Montar o master mix: água primeiro, polimerase por último.", "Homogeneizar por pipetagem suave e centrifugar brevemente.", {"texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok"}]}, {"id": "placa-pcr", "nome": "Placa de PCR", "tipo": "plate", "descricao": "Mapa da placa de reação, com as mesmas posições da normalização.", "checklist": [{"texto": "Termociclador registrado", "auto": "cycler-set"}, "Dispensar o master mix em cada poço ocupado do mapa.", "Conferir que o DNA normalizado está nos poços indicados.", "Selar, centrifugar brevemente e conferir ausência de bolhas.", "Levar ao termociclador e transferir para a área pós-PCR ao final.", {"texto": "Pacote para o pós-PCR gerado", "auto": "handoff-done"}]}]};
-const KITS_FILE = {"atualizadoEm": "31/10/2026", "kits": [{"id": "altype-ngs-11-loci-meia", "nome": "Altype NGS 11 Loci - meia receita", "versao": "0.3", "descricao": "Genotipagem HLA de 11 loci amplificados juntos em um único poço (meia receita).", "qc": {"concMinima": 7, "razao260280Min": 1.6, "razao260280Max": 2.1}, "normalizacao": {"concAlvo": 7, "volumeFinal": 4.3, "modoPadrao": "qiagility", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 20, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "HLA multiplex", "volumeReacao": 25, "volumeDNA": 4.3, "excedentePercentual": 10, "reagentes": [{"nome": "Tampão de PCR 5×", "volumePorAmostra": 5}, {"nome": "dNTP mix 10 mM", "volumePorAmostra": 0.5}, {"nome": "Pool de primers HLA multiplex", "volumePorAmostra": 2}, {"nome": "DNA polimerase", "volumePorAmostra": 0.5}, {"nome": "Água livre de nuclease", "volumePorAmostra": 12.7}]}, "termociclagem": [{"etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1"}, {"etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30"}, {"etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": ""}, {"etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": ""}, {"etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1"}, {"etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": ""}], "avisos": ["Reagentes, volumes e termociclagem de exemplo: substitua pelos do kit validado."]}, {"id": "amplicon-generico", "nome": "Painel de amplicon genérico (exemplo)", "versao": "0.2", "descricao": "Exemplo de outro kit: muda só normalização, reagentes e termociclagem.", "qc": {"concMinima": 5}, "normalizacao": {"concAlvo": 5, "volumeFinal": 5, "modoPadrao": "bench", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 10, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "Painel", "volumeReacao": 20, "volumeDNA": 5, "excedentePercentual": 10, "reagentes": [{"nome": "Master mix 2×", "volumePorAmostra": 10}, {"nome": "Pool de primers", "volumePorAmostra": 2}, {"nome": "Água livre de nuclease", "volumePorAmostra": 3}]}, "termociclagem": [], "avisos": ["Kit de exemplo."]}]};
+const KITS_FILE = {"atualizadoEm": "03/11/2026", "kits": [{"id": "alltype-ngs-11-loci-meia", "nome": "Altype NGS 11 Loci - meia receita", "versao": "0.3", "descricao": "Genotipagem de 11 loci HLA (HLA-A, -B, -C, -DRB1, -DRB345, -DQB1, -DPB1, -DQA1, -DPA1) com amplificação multiplex) - (meia receita).", "qc": {"concMinima": 7, "razao260280Min": 1.6, "razao260280Max": 2.1}, "normalizacao": {"concAlvo": 7, "volumeFinal": 4.3, "modoPadrao": "qiagility", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 20, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "Alltype multiplex", "volumeReacao": 10, "volumeDNA": 4.3, "excedentePercentual": 10, "reagentes": [{"nome": "Alltype Buffer", "volumePorAmostra": 2}, {"nome": "AllType dNTP", "volumePorAmostra": 0.8}, {"nome": "AllType Primer", "volumePorAmostra": 2.5}, {"nome": "AllType Polimerase", "volumePorAmostra": 0.4}]}, "termociclagem": [{"etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1"}, {"etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30"}, {"etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": ""}, {"etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": ""}, {"etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1"}, {"etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": ""}], "avisos": ["Reagentes, volumes e termociclagem de exemplo: substitua pelos do kit validado."], "posPcr": {"limpezaAmplicons": {"nome": "Purificação AMPure 0,6×", "volumeAmostra": 10, "razaoBeads": 0.6, "volumeEtanol": 50, "lavagensEtanol": 2, "etanolPercentual": 75, "volumeEluicao": 13.5, "volumeTransferencia": 12.5, "excedentePercentual": 10, "reagentes": {"beads": "AMPure XP beads", "etanol": "Etanol absoluto", "eluicao": "Low TE"}, "tempos": {"ambientarBeadsMin": 30, "ligacaoMin": 5, "etanolSeg": 30, "eluicaoMin": 2}}}}, {"id": "ngsgo-mx6-meia-receita", "nome": "NGSgo 6 loci - meia receita", "versao": "0.2", "descricao": "Protocolo para amplificação de 6 genes HLA (HLA-A, -B, -C, -DRB1, -DQB1, -DPB1).", "qc": {"concMinima": 5}, "normalizacao": {"concAlvo": 15, "volumeFinal": 4.13, "modoPadrao": "qiagility", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 10, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "Painel", "volumeReacao": 7.5, "volumeDNA": 4.13, "excedentePercentual": 10, "reagentes": [{"nome": "GenDx LongMix (4x)", "volumePorAmostra": 1.8}, {"nome": "NGSgo-Mx6-1 primer", "volumePorAmostra": 0.75}, {"nome": "Enhancer", "volumePorAmostra": 0.75}, {"nome": "Água livre de nuclease", "volumePorAmostra": 0}]}, "termociclagem": [{"etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1"}, {"etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30"}, {"etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": ""}, {"etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": ""}, {"etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1"}, {"etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": ""}], "avisos": ["Kit de exemplo."], "posPcr": {"limpezaAmplicons": {"nome": "Purificação AMPure 0,6×", "volumeAmostra": 10, "razaoBeads": 0.6, "volumeEtanol": 50, "lavagensEtanol": 2, "etanolPercentual": 75, "volumeEluicao": 13.5, "volumeTransferencia": 12.5, "excedentePercentual": 10, "reagentes": {"beads": "AMPure XP beads", "etanol": "Etanol absoluto", "eluicao": "Low TE"}, "tempos": {"ambientarBeadsMin": 30, "ligacaoMin": 5, "etanolSeg": 30, "eluicaoMin": 2}}}}]};
 let FLOW = FLOW_FILE, KITS = KITS_FILE.kits;
 const NORM_MAP = [['target', 'concAlvo'], ['finalVol', 'volumeFinal'], ['mode', 'modoPadrao'], ['minVolAuto', 'volumeMinimoRobo'], ['dilDeadVol', 'volumeMortoDiluente'],
   ['allowBelow', 'abaixoDoAlvoUsarPuro'], ['autoAdjust', 'ajusteAutomatico'], ['manualAtEnd', 'itensManuaisNoFim'], ['prepVol', 'bancada.volumePreparo'], ['minVolBench', 'bancada.volumeMinimo'], ['maxVol', 'bancada.volumeMaximo']];
 const getPath = (o, p) => p.split('.').reduce((a, k) => a == null ? a : a[k], o);
 const setPath = (o, p, v) => { const ks = p.split('.'); let a = o; ks.slice(0, -1).forEach(k => { a = a[k] ||= {}; }); a[ks[ks.length - 1]] = v; };
-const chkItems = l => (l || []).map(x => typeof x === 'string' ? x : { text: x.texto, auto: x.auto, when: x.quando });
+const chkItems = l => (l || []).map(x => typeof x === 'string' ? x : { text: x.texto, auto: x.auto, when: x.quando, timer: x.timer, alert: !!x.alerta });
 function composeProtocol(flow, kit) {
   const n = { ...NORM_DEFAULT }; NORM_MAP.forEach(([i, p]) => { const v = getPath(kit.normalizacao || {}, p); if (v != null) n[i] = v; });
   const mixes = (Array.isArray(kit.masterMix) ? kit.masterMix : [kit.masterMix]).filter(Boolean), m0 = mixes[0] || {};
@@ -707,6 +729,7 @@ function composeProtocol(flow, kit) {
         st.warnings = kit.avisos || [];
       }
       if (e.tipo === 'plate') st.config = { rows: 8, cols: 12 };
+      if (e.tipo === 'cleanup' || e.tipo === 'handoff') st.config = clone(getPath(kit, 'posPcr.' + (e.parametros || '')) || {});
       return st;
     }) };
 }
@@ -725,7 +748,7 @@ function validateKit(k) {
 }
 function validateFlow(f) {
   if (!f || !Array.isArray(f.etapas) || !f.etapas.length) return 'Falta a lista "etapas".';
-  const types = ['intake', 'normalize', 'mastermix', 'plate', 'placeholder'];
+  const types = ['intake', 'normalize', 'mastermix', 'plate', 'placeholder', 'handoff', 'cleanup'];
   for (const e of f.etapas) { if (!e.id || !e.nome) return 'Toda etapa precisa de "id" e "nome".'; if (!types.includes(e.tipo)) return `Etapa "${e.id}": tipo "${e.tipo}" desconhecido.`; }
   if (new Set(f.etapas.map(e => e.id)).size !== f.etapas.length) return 'Há etapas com "id" repetido.';
   return null;
@@ -774,7 +797,7 @@ async function fetchJson(name) {
   catch (e) { return null; }
 }
 async function loadRepo() {
-  const [fl, kt, t, r, c] = await Promise.all(['fluxo-pre-pcr.json', 'kits.json', 'tecnicos.json', 'reagentes.json', 'termocicladores.json'].map(fetchJson));
+  const [fl, kt, t, r, c] = await Promise.all([FLOW_NAME, 'kits.json', 'tecnicos.json', 'reagentes.json', 'termocicladores.json'].map(fetchJson));
   if (fl && !validateFlow(fl)) { FLOW = fl; REPO.fluxo = true; }
   if (kt?.kits?.length) { KITS = kt.kits.filter(k => !validateKit(k)); REPO.kits = true; }
   if (t || r || c) { regRepo = regFromFiles(t, r, c); REPO.cadastros = true; }
@@ -834,7 +857,7 @@ const stepById = id => proto().steps.find(s => s.id === id);
 const stepIndex = id => proto().steps.findIndex(s => s.id === id);
 function newRun(pid, demo) {
   const p = protocols.find(x => x.id === pid) || protocols[0];
-  return { protocolId: p.id, meta: { name: '', nameAuto: true, operator: '', date: today() }, steps: {}, current: p.steps[0].id, demo: !!demo };
+  return { id: uid(), protocolId: p.id, meta: { name: '', nameAuto: true, operator: '', date: today() }, steps: {}, current: p.steps[0].id, demo: !!demo };
 }
 let run = null;
 let pendingProtocol = null;
@@ -845,7 +868,17 @@ function st(id) {
 }
 function save() { store.set(RUN_KEY, run); }
 function seedDemo() {
-  const first = proto().steps[0]; if (first.type !== 'intake') return;
+  const first = proto().steps[0];
+  if (first.type === 'handoff') {
+    const s = st(first.id), codes = DEMO_MAPS.flatMap(m => m.rows).map(r => [r.id, r.id + '_' + r.ini]);
+    const wells = codes.map(([il, code], i) => ({ well: wellName(i + 1), pos: i + 1, code, il, type: 'sample', source: 'stock', validation: 'ok', finalConc: 7 }))
+      .concat([{ well: wellName(codes.length + 1), pos: codes.length + 1, code: '1999999_CP', il: '1999999', type: 'cp', source: 'tube', validation: 'ok' }, { well: wellName(codes.length + 2), pos: codes.length + 2, code: '0000000_CN', il: '0', type: 'cn', source: 'diluent', validation: 'ok' }]);
+    const demoPkg = { schema: 'bancada-ngs/pre-pcr-handoff', version: 1, generatedAt: '2026-01-01T12:00:00.000Z', protocol: { id: proto().id, name: proto().name }, run: { batch: 'LMX01012026EXA01PL01', operator: 'Exemplo', date: today() }, normalization: { mode: 'qiagility', postRun: { result: 'ok' } }, plate: { format: 96, wells } };
+    s.pkgs = [{ key: pkgKeyOf(demoPkg), file: 'LMX01012026EXA01PL01_pre-pcr.json (exemplo)', pkg: demoPkg }]; s.excl = {}; s.rows = pkgState(first).rows;
+    for (let i = 1; i < proto().steps.length; i++) importPrev(proto().steps[i].id, true);
+    return;
+  }
+  if (first.type !== 'intake') return;
   const s = st(first.id);
   s.txt = clone(DEMO_TXT); s.maps = clone(DEMO_MAPS); s.manual = {};
   for (let i = 1; i < proto().steps.length; i++) { if (proto().steps[i].type === 'placeholder') break; importPrev(proto().steps[i].id, true); }
@@ -922,6 +955,7 @@ function outputOf(step) {
   switch (step.type) {
     case 'intake': return intakeState(step).rows.filter(r => r.include).map(({ qc, include, found, edited, ...r }) => r);
     case 'normalize': return normState(step).items;
+    case 'handoff': return pkgState(step)?.rows || [];
     default: return s.rows;
   }
 }
@@ -957,7 +991,7 @@ async function pdfLines(buf) {
 }
 
 /* ============ render ============ */
-function render() { renderHeader(); renderRail(); renderWork(); save(); }
+function render() { renderHeader(); renderRail(); renderWork(); save(); syncAllClaims(); }
 function renderHeader() {
   $('#f-proto').innerHTML = protocols.map(p => `<option value="${esc(p.id)}" ${p.id === run.protocolId ? 'selected' : ''}>${esc(p.name)}${p.custom ? ' ✎' : ''}</option>`).join('');
   autoBatchName();
@@ -976,7 +1010,9 @@ function mapsBase() {
 }
 function autoBatchName() {
   const m = run.meta, auto = m.nameAuto === true || (m.nameAuto == null && (!m.name || /^Corrida \d{4}-/.test(m.name)));
-  if (!auto) return; const b = mapsBase(); m.nameAuto = true; m.name = b;
+  if (!auto) return;
+  const h = MODULE === 'pos' ? proto().steps.find(x => x.type === 'handoff') : null, P = h ? pkgState(h) : null;
+  const b = MODULE === 'pos' ? (P ? [...new Set(P.used.map(w => w.batch))].join(' + ') : '') : mapsBase(); m.nameAuto = true; m.name = b;
 }
 function procOf(step) {
   if (step.type === 'normalize') { const m = normCfg(step).mode; return { list: (m === 'bench' ? step.procedureBench : step.procedureQiagility) || [], prefix: m + ':' }; }
@@ -984,7 +1020,7 @@ function procOf(step) {
 }
 function procItems(step) {
   const { list, prefix } = procOf(step);
-  return list.map((x, i) => typeof x === 'string' ? { text: x, k: prefix + i } : { text: x.text, auto: x.auto, when: x.when, k: prefix + i })
+  return list.map((x, i) => typeof x === 'string' ? { text: x, k: prefix + i } : { text: x.text, auto: x.auto, when: x.when, timer: x.timer, alert: x.alert, k: prefix + i })
     .filter(it => !it.when || whenCheck(step, it.when));
 }
 function whenCheck(step, w) {
@@ -1002,12 +1038,14 @@ function autoCheck(step, key) {
     case 'lots-ok': { const L = lotStatus(step); return L.list.length > 0 && !L.missing && !L.expired; }
     case 'cycler-set': return !!cyclerFor(s.cycler);
     case 'handoff-done': return !!s.handoffAt;
+    case 'pkg-loaded': migratePkg(s); return !!(s.pkgs || []).length;
+    case 'pkg-ok': { const P = pkgState(step); return !!P && P.rows.length > 0 && !P.issues.some(x => x[0] === 'bad'); }
   }
   return false;
 }
 const itemDone = (step, it) => it.auto ? autoCheck(step, it.auto) : !!st(step.id).checks[it.k];
 function checkCount(step) { return procItems(step).filter(it => itemDone(step, it)).length; }
-function stepCount(step) { return step.type === 'intake' ? outputOf(step).length : st(step.id).rows.length; }
+function stepCount(step) { return step.type === 'intake' || step.type === 'handoff' ? outputOf(step).length : st(step.id).rows.length; }
 function stepDone(step) { const n = procItems(step).length; return step.type !== 'placeholder' && n > 0 && checkCount(step) >= n && stepCount(step) > 0; }
 function renderRail() {
   let html = '', zone = null;
@@ -1046,6 +1084,7 @@ function renderWork() {
   }
   let body = '';
   if (step.type === 'intake') body = renderIntake(step);
+  else if (step.type === 'handoff') body = renderHandoff(step);
   else {
     if (p && s.importedHash && s.importedHash !== hash(JSON.stringify(outputOf(p))))
       html += `<div class="banner warn"><span>A etapa “${esc(p.name)}” mudou depois da importação desta lista.</span><button class="btn small" data-act="import-prev">Reimportar</button></div>`;
@@ -1059,9 +1098,10 @@ function renderWork() {
     proc = `<section class="panel"><div class="panel-h"><h3>Checklist${step.type === 'normalize' ? (normCfg(step).mode === 'bench' ? ' · bancada' : ' · QIAgility') : ''}</h3><span class="hint num">${done}/${items.length} concluídos</span></div>`;
     if ((step.warnings || []).length) proc += `<ul class="warnlist">${step.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>`;
     proc += `<ol class="checks">${items.map(it => { const ok = itemDone(step, it);
-      if (it.auto) return `<li><div class="autoline"><span class="abox ${ok ? 'on' : ''}" aria-hidden="true">${ok ? '✓' : ''}</span><span class="${ok ? 'done-t' : ''}">${esc(it.text)}</span>${chip(ok ? ['ok', 'feito pelo app'] : ['info', 'automático'])}</div></li>`;
-      const c = s.checks[it.k];
-      return `<li><label><input type="checkbox" id="chk-${esc(step.id)}-${esc(it.k)}" data-act="check" data-k="${esc(it.k)}" ${c ? 'checked' : ''}><span class="${c ? 'done-t' : ''}">${esc(it.text)}</span>${c ? `<time>${esc(c)}</time>` : '<span></span>'}</label></li>`; }).join('')}</ol>
+      const text = fillVars(step, it.text);
+      if (it.auto) return `<li><div class="autoline"><span class="abox ${ok ? 'on' : ''}" aria-hidden="true">${ok ? '✓' : ''}</span><span class="${ok ? 'done-t' : ''}">${esc(text)}</span>${chip(ok ? ['ok', 'feito pelo app'] : ['info', 'automático'])}</div></li>`;
+      const c = s.checks[it.k], tm = timerButton(step, it);
+      return `<li class="${it.alert ? 'alert-item' : ''}"><label><input type="checkbox" id="chk-${esc(step.id)}-${esc(it.k)}" data-act="check" data-k="${esc(it.k)}" ${c ? 'checked' : ''}><span class="${c ? 'done-t' : ''}">${it.alert ? '<b>Atenção:</b> ' : ''}${esc(text)}</span>${c ? `<time>${esc(c)}</time>` : '<span></span>'}</label>${tm}</li>`; }).join('')}</ol>
       <p class="hint">Itens “automático” são marcados pelo app quando a etapa comprova a ação. Os demais são passos de bancada, marcados pelo técnico.</p></section>`;
   }
   html += body.includes('<!--PROC-->') ? body.replace('<!--PROC-->', proc) : body + proc;
@@ -1071,12 +1111,194 @@ function renderWork() {
     html += nx ? `<section class="panel"><div class="panel-h"><h3>Saída da etapa</h3><button class="btn primary" data-act="next">Ir para “${esc(nx.name)}”</button></div>
       <p class="hint">A próxima etapa importa esta lista diretamente. Para registro ou LIMS, exporte em CSV (separador ;).</p>
       <div class="row"><button class="btn" data-act="export-csv">Exportar CSV</button></div></section>`
+      : MODULE === 'pos' ? `<section class="panel"><div class="panel-h"><h3>Saída da etapa</h3></div>
+      <p class="hint">Última etapa configurada no pós-PCR. As próximas (quantificação, indexação, pool) entram no <span class="mono">fluxo-pos-pcr.json</span> quando forem definidas.</p>
+      <div class="row"><button class="btn" data-act="export-csv">Exportar CSV</button></div></section>`
       : `<section class="panel"><div class="panel-h"><h3>Entrega para o pós-PCR</h3><button class="btn primary" data-act="handoff">Gerar pacote pós-PCR (.json)</button></div>
       <p class="hint">Fim do pré-PCR. O pacote leva o mapa da placa com os códigos IL_INICIAIS, a normalização prevista, a validação do QIAgility e os passos concluídos. É a entrada do app do pós-PCR. Não contém nomes de pacientes.</p>
       <div class="row"><button class="btn" data-act="export-csv">Exportar CSV da placa</button><button class="btn ghost" data-act="handoff-view">Ver conteúdo</button></div></section>`;
   }
   $('#work').innerHTML = html;
 }
+
+/* ---------- pós-PCR: pacotes do pré-PCR (uma ou várias baterias, completas ou parciais) ---------- */
+const wellIdxName = w => wellIndex(String(w)[0], String(w).slice(1));
+const pkgKeyOf = pkg => (pkg.run?.batch || pkg.run?.name || 'bateria') + '@' + (pkg.generatedAt || '');
+/* Registro de rodadas: quais poços de cada bateria já entraram em uma rodada do pós-PCR (neste navegador) */
+const CONS_KEY = 'bancadaNGS.posRodadas.v1';
+const consGet = () => store.get(CONS_KEY) || {};
+function claimOther(key, well) { const e = consGet()[key]?.[well]; return e && e.runId !== run.id ? e : null; }
+function syncClaims(step) {
+  const s = st(step.id), c = consGet(), excl = s.excl || {};
+  Object.values(c).forEach(m => Object.keys(m).forEach(w => { if (m[w].runId === run.id) delete m[w]; }));    // limpa o que era desta rodada
+  (s.pkgs || []).forEach(p => (p.pkg.plate?.wells || []).forEach(w => { if (!excl[p.key + '|' + w.well]) (c[p.key] ||= {})[w.well] = { runId: run.id, name: run.meta.name || 'rodada sem nome', date: run.meta.date }; }));
+  Object.keys(c).forEach(k => { if (!Object.keys(c[k]).length) delete c[k]; });
+  store.set(CONS_KEY, c);
+}
+function syncAllClaims() { if (MODULE !== 'pos' || !run) return; const h = proto().steps.find(x => x.type === 'handoff'); if (h && (st(h.id).pkgs || []).length && !run.demo) syncClaims(h); }
+function releaseClaims(runId) { const c = consGet(); Object.values(c).forEach(m => Object.keys(m).forEach(w => { if (m[w].runId === runId) delete m[w]; })); store.set(CONS_KEY, c); }
+function migratePkg(s) {   // versão anterior guardava um só pacote
+  if (s.pkg && !s.pkgs) { const key = pkgKeyOf(s.pkg), ex = {}; Object.keys(s.excl || {}).forEach(w => { if (s.excl[w]) ex[key + '|' + w] = true; });
+    s.pkgs = [{ key, file: s.pkgFile || '', pkg: s.pkg }]; s.excl = ex; delete s.pkg; delete s.pkgFile; }
+}
+function pkgState(step) {
+  const s = st(step.id); migratePkg(s);
+  const pkgs = s.pkgs || []; if (!pkgs.length) return null;
+  const excl = s.excl || {}, issues = [];
+  const all = pkgs.flatMap((p, pi) => (p.pkg.plate?.wells || []).slice().sort((a, b) => wellIdxName(a.well) - wellIdxName(b.well))
+    .map(w => ({ ...w, key: p.key, pi, batch: p.pkg.run?.batch || p.pkg.run?.name || 'bateria ' + (pi + 1), sel: !excl[p.key + '|' + w.well], claim: claimOther(p.key, w.well) })));
+  const used = all.filter(w => w.sel);
+  const kitIds = [...new Set(pkgs.map(p => p.pkg.protocol?.id).filter(Boolean))];
+  pkgs.forEach(p => { if (p.pkg.protocol?.id && p.pkg.protocol.id !== run.protocolId) issues.push(['warn', `Bateria ${p.pkg.run?.batch || ''}: gerada com o kit “${p.pkg.protocol.name}”; o kit selecionado aqui é “${proto().name}”.`]); });
+  if (kitIds.length > 1) issues.push(['warn', 'As baterias carregadas usaram kits diferentes no pré-PCR.']);
+  const bad = used.filter(w => w.validation === 'bad');
+  if (bad.length) issues.push(['bad', `${bad.length} poço(s) com divergência na validação do QIAgility (${bad.map(w => w.batch + ' ' + w.well).join(', ')}). Confira; para seguir sem eles, desmarque.`]);
+  const man = used.filter(w => w.validation === 'manual'); if (man.length) issues.push(['warn', `Completado(s) à mão no pré-PCR: ${man.map(w => w.batch + ' ' + w.well).join(', ')}.`]);
+  pkgs.forEach(p => { if (p.pkg.normalization?.mode === 'qiagility' && !p.pkg.normalization?.postRun) issues.push(['warn', `Bateria ${p.pkg.run?.batch || ''}: sem validação pós-corrida do QIAgility.`]); });
+  const reused = used.filter(w => w.claim); if (reused.length) issues.push(['warn', `${reused.length} poço(s) selecionado(s) já entraram em outra rodada (${[...new Set(reused.map(w => w.claim.name))].join(', ')}).`]);
+  const seen = {}, dup = []; used.filter(w => w.type === 'sample').forEach(w => { if (seen[w.code]) dup.push(w.code); seen[w.code] = 1; });
+  if (dup.length) issues.push(['warn', `Mesma amostra em mais de uma bateria: ${[...new Set(dup)].join(', ')}.`]);
+  if (used.length > 96) issues.push(['bad', `${used.length} poços selecionados: a placa nova comporta 96.`]);
+  const canKeep = pkgs.length === 1;
+  const layout = canKeep && (s.layout || 'keep') === 'keep' ? 'keep' : 'compact';
+  const rows = used.map((w, i) => { const dest = layout === 'keep' ? wellIdxName(w.well) : i + 1;
+    return { pos: i + 1, id: w.il, code: w.code, kind: w.type || 'sample', source: w.source, srcBatch: w.batch, srcWell: w.well, srcKey: w.key, dest, destWell: wellName(dest), validation: w.validation, finalConc: w.finalConc, include: true }; });
+  return { pkgs, all, used, rows, issues, excl, layout, canKeep };
+}
+function refreshPkgRows(step) { const P = pkgState(step); st(step.id).rows = P ? P.rows : []; if (P || st(step.id).pkgs) syncClaims(step); }
+const vchip = v => v === 'ok' ? chip(['ok', 'Confere']) : v === 'warn' ? chip(['warn', 'Conferir']) : v === 'bad' ? chip(['bad', 'Divergente']) : v === 'manual' ? chip(['warn', 'Manual']) : '<span class="muted">—</span>';
+function pickPlate(p, P) {
+  const by = {}; P.all.filter(w => w.key === p.key).forEach(w => by[wellIdxName(w.well)] = w);
+  let h = `<div class="mp pick" role="group" aria-label="Selecionar poços"><span></span>` + Array.from({ length: 12 }, (_, c) => `<button class="mh" data-act="pkg-col" data-key="${esc(p.key)}" data-c="${c + 1}" title="Coluna ${c + 1}">${c + 1}</button>`).join('');
+  for (let r = 0; r < 8; r++) {
+    h += `<button class="mh" data-act="pkg-row" data-key="${esc(p.key)}" data-r="${'ABCDEFGH'[r]}" title="Fila ${'ABCDEFGH'[r]}">${'ABCDEFGH'[r]}</button>`;
+    for (let c = 0; c < 12; c++) { const w = by[c * 8 + r + 1];
+      h += w ? `<button class="d ${w.sel ? 'on' : ''} ${w.claim ? 'claimed' : ''} ${w.type !== 'sample' ? 'ctl' : ''} ${w.validation === 'bad' ? 'bad' : ''}" style="--pc:var(--post)" data-act="pkg-well" data-key="${esc(p.key)}" data-w="${esc(w.well)}" title="${esc(w.well + ' · ' + w.code + (w.claim ? ' · já na rodada ' + w.claim.name : ''))}" aria-pressed="${w.sel}"></button>` : '<span class="d none"></span>'; }
+  }
+  return h + '</div>';
+}
+function renderHandoff(step) {
+  const s = st(step.id), P = pkgState(step);
+  const drop = (first) => `<div class="drop" data-drop="pkg"><h4>${first ? 'Amplicons da PCR' : 'Adicionar outra bateria'} <span class="ext">_pre-pcr.json</span></h4>
+      ${first ? '<p class="hint">Carregue um ou mais pacotes gerados no fim do pré-PCR (etapa Placa de PCR → “Gerar pacote pós-PCR”). Dá para unir várias baterias numa rodada ou levar só parte de uma bateria.</p>' : ''}
+      <div class="row"><label class="btn ${first ? 'primary' : ''}">Carregar pacote${first ? '' : ' (.json)'}<input type="file" id="f-pkg" accept=".json,application/json" multiple hidden></label><span class="hint">ou arraste os arquivos aqui</span></div></div>`;
+  if (!P) return `<section class="panel"><div class="panel-h"><h3>Baterias do pré-PCR</h3></div>${drop(true)}</section>`;
+  const bad = P.issues.filter(i => i[0] === 'bad').length;
+  let h = `<section class="panel"><div class="panel-h"><h3>Baterias do pré-PCR</h3><span class="hint">Clique nos poços, nas colunas ou nas filas para escolher o que entra nesta rodada.</span></div>
+    <div class="pkgs">${P.pkgs.map(p => { const k = p.pkg, ws = P.all.filter(w => w.key === p.key), sel = ws.filter(w => w.sel).length, cl = ws.filter(w => w.claim).length, pr = k.normalization?.postRun;
+      return `<div class="pkg"><div class="pkg-h"><b class="mono">${esc(k.run?.batch || k.run?.name || p.file)}</b><button class="btn small ghost" data-act="pkg-rm" data-key="${esc(p.key)}">Remover</button></div>
+        <div class="pkg-meta">${[k.protocol?.name, k.run?.operator, isoToBR(k.run?.date), k.thermocycler?.id, pr ? 'QIAgility ' + ({ ok: 'validado', warn: 'validado com alertas', bad: 'com divergências' }[pr.result] || pr.result) : (k.normalization?.mode === 'bench' ? 'normalização em bancada' : 'sem relatório do QIAgility')].filter(Boolean).map(esc).join(' · ')}</div>
+        ${pickPlate(p, P)}
+        <div class="row"><span class="num"><b>${sel}</b>/${ws.length} poços</span>${cl ? chip(['warn', `${cl} já em outra rodada`]) : ''}
+          <span class="row" style="margin-left:auto"><button class="btn small" data-act="pkg-sel" data-key="${esc(p.key)}" data-m="all">Todos</button><button class="btn small" data-act="pkg-sel" data-key="${esc(p.key)}" data-m="pending">Só pendentes</button><button class="btn small" data-act="pkg-sel" data-key="${esc(p.key)}" data-m="none">Nenhum</button></span></div></div>`; }).join('')}
+      ${drop(false)}</div>
+    <div class="legend"><span><i style="background:var(--post);border-color:var(--post)"></i>Entra nesta rodada</span><span><i style="border-color:var(--line)"></i>Fica para depois</span><span><i style="border-color:var(--warn);border-style:dashed"></i>Já processado em outra rodada</span><span><i style="border-color:var(--bad);border-width:2px"></i>Divergente no QIAgility</span></div></section>`;
+  h += `<section class="panel"><div class="panel-h"><h3>Placa da rodada</h3>
+      <div class="seg" role="group" aria-label="Posições na placa nova"><button data-act="layout" data-l="keep" aria-pressed="${P.layout === 'keep'}" ${P.canKeep ? '' : 'disabled title="Com mais de uma bateria as posições são reorganizadas"'}>Manter posições<small>mesmo poço da placa de PCR</small></button><button data-act="layout" data-l="compact" aria-pressed="${P.layout === 'compact'}">Compactar<small>em sequência, por coluna</small></button></div></div>
+    <div class="kpis"><div class="kpi"><span class="label">Baterias</span><span class="num">${P.pkgs.length}</span></div>
+      <div class="kpi"><span class="label">Poços na rodada</span><span class="num">${P.rows.length}</span></div>
+      <div class="kpi"><span class="label">Amostras</span><span class="num">${P.rows.filter(r => r.kind === 'sample').length}</span></div>
+      <div class="kpi"><span class="label">Controles</span><span class="num">${P.rows.filter(r => r.kind !== 'sample').length}</span></div>
+      <div class="kpi"><span class="label">Ficam para depois</span><span class="num">${P.all.length - P.used.length}</span></div></div>
+    ${P.issues.length ? `<div class="banner ${bad ? 'bad' : 'warn'}"><ul class="issues">${P.issues.map(i => `<li>${chip([i[0], i[0] === 'bad' ? 'Resolver' : 'Conferir'])}<span>${esc(i[1])}</span></li>`).join('')}</ul></div>` : (P.rows.length ? '<div class="banner ok"><span>Seleção conferida: todos os poços da rodada conferem com o previsto no pré-PCR.</span></div>' : '')}
+    ${P.rows.length ? `<div class="tbl"><table><thead><tr><th>Poço novo</th><th>Amostra</th><th>Tipo</th><th>Origem</th><th>Validação QIAgility</th><th class="r">Conc. final <span class="u">ng/µL</span></th></tr></thead><tbody>
+    ${P.rows.map(r => `<tr class="${r.kind !== 'sample' ? 'ctl' : ''}"><td><span class="well-tag">${r.destWell}</span></td><td class="mono">${esc(r.code)}</td><td>${chip(KIND[r.kind] || KIND.sample)}</td><td class="mono">${esc(r.srcBatch)} · ${esc(r.srcWell)}</td><td>${vchip(r.validation)}</td><td class="r num">${r.finalConc != null ? fmt(r.finalConc, 2) : '—'}</td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="empty"><strong>Nenhum poço selecionado</strong><span>Escolha os poços nas placas acima.</span></div>'}
+    <p class="hint">O registro de rodadas fica neste navegador: ao carregar a mesma bateria em outra rodada, os poços já processados vêm desmarcados.</p></section>`;
+  return h + (P.rows.length ? renderPlate(step) : '');
+}
+async function loadPkg(files) {
+  const list = [...(files.length != null ? files : [files])]; let n = 0;
+  for (const f of list) {
+    try {
+      const o = JSON.parse(await f.text());
+      if (o.schema !== 'bancada-ngs/pre-pcr-handoff' || !o.plate?.wells?.length) { toast(`${f.name}: não é um pacote do pré-PCR`); continue; }
+      if (run.demo) { releaseClaims(run.id); run = newRun(run.protocolId, false); }
+      const s = st(run.current); migratePkg(s); s.pkgs ||= []; s.excl ||= {};
+      const key = pkgKeyOf(o);
+      if (s.pkgs.some(p => p.key === key)) { toast(`${o.run?.batch || f.name} já está carregada`); continue; }
+      if (!s.pkgs.length && o.protocol?.id && o.protocol.id !== run.protocolId && protocols.some(p => p.id === o.protocol.id)) run.protocolId = o.protocol.id;
+      s.pkgs.push({ key, file: f.name, pkg: o });
+      o.plate.wells.forEach(w => { if (claimOther(key, w.well)) s.excl[key + '|' + w.well] = true; });   // já processados em outra rodada: vêm desmarcados
+      n++;
+    } catch (e) { toast(`Não foi possível ler ${f.name}`); }
+  }
+  if (n) { refreshPkgRows(stepById(run.current)); render(); toast(`${n} bateria(s) carregada(s)`); }
+}
+
+/* ---------- pós-PCR: purificação com beads (AMPure) ---------- */
+const fmtN = v => v == null || !isFinite(v) ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+function cleanupState(step) {
+  const c = step.config || {}, s = st(step.id), n = s.rows.filter(r => r.include !== false).length;
+  const ov = s.overrides.overage ?? c.excedentePercentual ?? 10, f = n * (1 + ov / 100);
+  const beads = (+c.volumeAmostra || 0) * (+c.razaoBeads || 0), et = (+c.volumeEtanol || 0) * (+c.lavagensEtanol || 0), el = +c.volumeEluicao || 0;
+  const rg = c.reagentes || {}, pct = +c.etanolPercentual || 75, t = c.tempos || {};
+  const reagents = [
+    { key: 'beads', name: rg.beads || 'AMPure XP beads', per: beads, total: beads * f, note: `${fmtN(c.razaoBeads)}× sobre ${fmtN(c.volumeAmostra)} µL de amplicon` },
+    { key: 'etanol', name: rg.etanol || 'Etanol absoluto', per: et * pct / 100, total: et * f * pct / 100, note: `para o etanol ${fmtN(pct)}%` },
+    { key: 'eluicao', name: rg.eluicao || 'Low TE', per: el, total: el * f, note: 'eluição' }];
+  const etTotal = et * f, etAbs = etTotal * pct / 100;
+  const vars = { amostra: c.volumeAmostra, razao: c.razaoBeads, beads, etanol: c.volumeEtanol, lavagens: c.lavagensEtanol, etanolPct: pct, eluicao: el, transferencia: c.volumeTransferencia,
+    reagenteBeads: reagents[0].name, reagenteEluicao: reagents[2].name, ...t };
+  return { c, n, ov, f, beads, et, el, reagents, etTotal, etAbs, etWater: etTotal - etAbs, pct, vars };
+}
+function fillVars(step, text) {
+  if (step.type !== 'cleanup' || !/\{\w+\}/.test(text || '')) return text;
+  const v = cleanupState(step).vars;
+  return text.replace(/\{(\w+)\}/g, (m, k) => v[k] == null ? m : (typeof v[k] === 'number' ? fmtN(v[k]) : v[k]));
+}
+function transferNote(step, c) {
+  const rows = st(step.id).rows.filter(r => r.include !== false), batches = [...new Set(rows.map(r => r.srcBatch).filter(Boolean))];
+  const same = rows.every(r => !r.srcWell || r.srcWell === r.destWell) && batches.length <= 1;
+  if (same) return `<p class="hint">Ao final, o sobrenadante (${fmtN(c.volumeTransferencia)} µL) vai para uma <b>placa nova, nas mesmas posições</b> do mapa abaixo.</p>`;
+  return `<div><span class="label">Transferência para a placa nova (${fmtN(c.volumeTransferencia)} <span class="u">µL</span> de sobrenadante)</span>
+    <p class="hint">As beads são adicionadas nos poços de origem${batches.length > 1 ? `, em cada placa de PCR (${batches.map(esc).join(', ')})` : ''}. O eluído vai para o poço novo indicado.</p>
+    <div class="tbl" style="margin-top:6px"><table><thead><tr><th>Origem</th><th></th><th>Poço novo</th><th>Amostra</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td class="mono">${esc(r.srcBatch || '')} · ${esc(r.srcWell || '')}</td><td class="muted">→</td><td><span class="well-tag">${r.destWell}</span></td><td class="mono">${esc(r.code)}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function renderCleanup(step) {
+  const C = cleanupState(step), c = C.c, s = st(step.id);
+  const ml = v => v >= 1000 ? `${fmtN(v / 1000)} mL` : `${fmtN(v)} µL`;
+  let h = `<section class="panel"><div class="panel-h"><h3>${esc(c.nome || step.name)}</h3><span class="hint">${fmtN(c.razaoBeads)}× · ${fmtN(c.volumeAmostra)} µL de amplicon por poço</span></div>
+    <div class="kpis"><div class="kpi"><span class="label">Poços</span><span class="num">${C.n}</span></div>
+      <div class="kpi"><span class="label">Beads por poço</span><span class="num">${fmtN(C.beads)} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Etanol ${fmtN(C.pct)}% por poço</span><span class="num">${fmtN(c.lavagensEtanol)} × ${fmtN(c.volumeEtanol)} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Eluição / transferência</span><span class="num">${fmtN(C.el)} / ${fmtN(c.volumeTransferencia)} <span class="u">µL</span></span></div></div>
+    <div class="ctrls">${numField('cl-over', 'overage', 'Excedente (%)', C.ov, 0)}</div>
+    ${lotBanner(step)}
+    <div class="tbl"><table><thead><tr><th>Reagente</th><th>Uso</th><th class="r">Por poço</th><th class="r">Total (${C.n} + ${fmtN(C.ov)}%)</th><th>Lote · validade</th></tr></thead><tbody>
+    ${C.reagents.map(r => `<tr><td>${esc(r.name)}</td><td class="muted">${esc(r.note)}</td><td class="r num">${fmtN(r.per)} <span class="u">µL</span></td><td class="r num"><b>${ml(r.total)}</b></td><td>${lotCell(step, r.key, r.name)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="banner info"><span><b>Etanol ${fmtN(C.pct)}% (preparar na hora):</b> ${ml(C.etTotal)} = ${ml(C.etAbs)} de etanol absoluto + ${ml(C.etWater)} de água livre de nuclease.</span></div>
+    ${Math.abs((+c.volumeEluicao || 0) - (+c.volumeTransferencia || 0)) > 0 && +c.volumeTransferencia > +c.volumeEluicao ? '<div class="banner bad"><span>O volume transferido é maior que o de eluição. Confira o kit.</span></div>' : ''}
+    ${transferNote(step, c)}</section>`;
+  return h + renderPlate(step);
+}
+/* cronômetro dos passos do checklist (incubações, esperas) */
+const TIMERS = {};
+function timerSeconds(step, it) {
+  if (!it.timer) return 0; const v = +((step.config || {}).tempos || {})[it.timer];
+  if (!(v > 0)) return 0; return /Seg$/i.test(it.timer) ? v : v * 60;
+}
+const mmss = n => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
+function timerButton(step, it) {
+  const sec = timerSeconds(step, it); if (!sec) return '';
+  const id = step.id + ':' + it.k, t = TIMERS[id];
+  const left = t ? Math.max(0, Math.ceil((t.end - Date.now()) / 1000)) : sec;
+  const state = !t ? 'idle' : left > 0 ? 'run' : 'done';
+  return `<button class="btn small timer t-${state}" data-act="timer" data-id="${esc(id)}" data-sec="${sec}" data-timer="${esc(id)}">${state === 'done' ? '✓ ' + mmss(sec) + ' concluído' : (state === 'run' ? '■ ' : '▶ ') + mmss(left)}</button>`;
+}
+function beep() {
+  try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.35, 0.7].forEach(d => { const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = 880; o.connect(g); g.connect(ctx.destination); g.gain.setValueAtTime(0.2, ctx.currentTime + d); o.start(ctx.currentTime + d); o.stop(ctx.currentTime + d + 0.2); }); } catch (e) {}
+}
+setInterval(() => {
+  document.querySelectorAll('[data-timer]').forEach(b => {
+    const t = TIMERS[b.dataset.timer]; if (!t || t.fired) return;
+    const left = Math.max(0, Math.ceil((t.end - Date.now()) / 1000));
+    if (left > 0) { b.textContent = '■ ' + mmss(left); return; }
+    t.fired = true; b.className = 'btn small timer t-done'; b.textContent = '✓ ' + mmss(+b.dataset.sec) + ' concluído'; beep(); toast('Tempo concluído');
+  });
+}, 500);
 
 /* ---------- etapa: bateria de testes ---------- */
 function renderIntake(step) {
@@ -1137,6 +1359,7 @@ function renderTypeBody(step) {
   if (step.type === 'normalize') return renderNormalize(step);
   if (step.type === 'mastermix') return renderMix(step);
   if (step.type === 'plate') return renderPlate(step);
+  if (step.type === 'cleanup') return renderCleanup(step);
   return '';
 }
 const NORM_KEYS = ['mode', 'target', 'finalVol', 'minVolAuto', 'dilDeadVol', 'prepVol', 'minVolBench', 'maxVol', 'allowBelow', 'autoAdjust', 'manualAtEnd'];
@@ -1299,12 +1522,23 @@ function renderBench(step, N) {
     </tbody></table></div>
     <p class="hint">DNA <span class="u">µL</span> = alvo × volume preparado ÷ concentração. DNA e água nunca ficam abaixo do volume mínimo de pipetagem: o app aumenta o volume preparado até o máximo do tubo e, se não couber, indica a menor pré-diluição que resolve.</p></section>`;
 }
+function stepReagents(step) {
+  if (step.type === 'mastermix') return step.config.mixes.flatMap(x => x.components.map(k => ({ key: x.name + '::' + k.name, name: k.name, mix: x.name })));
+  if (step.type === 'cleanup') return cleanupState(step).reagents.map(r => ({ key: r.key, name: r.name, mix: step.config.nome || step.name }));
+  return [];
+}
 function lotStatus(step) {
   const lots = st(step.id).lots || {}, out = { missing: 0, expired: 0, soon: 0, list: [] };
-  step.config.mixes.forEach(x => x.components.forEach(k => { const key = x.name + '::' + k.name, rg = reagentFor(lots[key]);
+  stepReagents(step).forEach(({ key, name, mix }) => { const rg = reagentFor(lots[key]);
     if (!rg) out.missing++; else { const e = expiryState(rg.expiry, run.meta.date); if (e[0] === 'bad') out.expired++; else if (e[0] === 'warn') out.soon++; }
-    out.list.push({ mix: x.name, component: k.name, reagent: rg?.name || null, lot: rg?.lot || null, expiry: rg?.expiry || null }); }));
+    out.list.push({ mix, component: name, reagent: rg?.name || null, lot: rg?.lot || null, expiry: rg?.expiry || null }); });
   return out;
+}
+function lotCell(step, key, name) {
+  const sel = (st(step.id).lots || {})[key], rg = reagentFor(sel), nk = normName(name);
+  const match = reg.reagents.filter(r => normName(r.name) === nk || normName(r.name).includes(nk) || nk.includes(normName(r.name)));
+  const opts = (match.length ? match : reg.reagents).slice().sort((a, b) => (a.expiry || '').localeCompare(b.expiry || ''));
+  return `<span class="row" style="flex-wrap:nowrap"><select class="cell" id="lot-${esc(slug(key))}" data-lot="${esc(key)}"><option value="">— lote —</option>${opts.map(r => `<option value="${r.id}" ${r.id === sel ? 'selected' : ''}>${esc(match.length ? '' : r.name + ' · ')}${esc(r.lot)} · ${isoToBR(r.expiry)}</option>`).join('')}<option value="__new">+ Cadastrar lote…</option></select>${rg ? chip(expiryState(rg.expiry, run.meta.date)) : ''}</span>`;
 }
 function lotBanner(step) {
   const L = lotStatus(step);
@@ -1326,11 +1560,7 @@ function renderMix(step) {
   <div class="mixes">${m.mixes.map(x => { const diff = x.perRx + c.templateVol - c.rxnVol;
     return `<div class="mix"><div class="mix-h"><b>${esc(x.name)}</b><span class="hint">dispensar <span class="num">${fmt(x.perRx)} <span class="u">µL</span></span>/poço</span></div>
     <div class="tbl"><table><thead><tr><th>Componente</th><th class="r"><span class="u">µL</span>/rx</th><th class="r">Total <span class="u">µL</span></th><th>Lote · validade</th></tr></thead><tbody>
-    ${x.components.map(k => { const key = x.name + '::' + k.name, sel = (st(step.id).lots || {})[key], rg = reagentFor(sel);
-      const nk = normName(k.name), match = reg.reagents.filter(r => normName(r.name) === nk || normName(r.name).includes(nk) || nk.includes(normName(r.name)));
-      const opts = (match.length ? match : reg.reagents).slice().sort((a, b) => (a.expiry || '').localeCompare(b.expiry || ''));
-      return `<tr><td>${esc(k.name)}</td><td class="r num">${fmt(k.vol)}</td><td class="r num"><b>${fmt(k.total)}</b></td>
-        <td><span class="row" style="flex-wrap:nowrap"><select class="cell" id="lot-${esc(slug(key))}" data-lot="${esc(key)}"><option value="">— lote —</option>${opts.map(r => `<option value="${r.id}" ${r.id === sel ? 'selected' : ''}>${esc(match.length ? '' : r.name + ' · ')}${esc(r.lot)} · ${isoToBR(r.expiry)}</option>`).join('')}<option value="__new">+ Cadastrar lote…</option></select>${rg ? chip(expiryState(rg.expiry, run.meta.date)) : ''}</span></td></tr>`; }).join('')}
+    ${x.components.map(k => `<tr><td>${esc(k.name)}</td><td class="r num">${fmt(k.vol)}</td><td class="r num"><b>${fmt(k.total)}</b></td><td>${lotCell(step, x.name + '::' + k.name, k.name)}</td></tr>`).join('')}
     </tbody><tfoot><tr><td>Total do mix</td><td class="r num">${fmt(x.perRx)}</td><td class="r num">${fmt(x.total)}</td><td></td></tr></tfoot></table></div>
     ${Math.abs(diff) > 0.001 ? `<div class="banner bad" style="border-radius:0">Mix + DNA (${fmt(c.templateVol)} <span class="u">µL</span>) = ${fmt(x.perRx + c.templateVol)} <span class="u">µL</span>, diferente da reação de ${fmt(c.rxnVol)} <span class="u">µL</span>.</div>` : ''}</div>`; }).join('')}</div>
   <p class="hint">DNA normalizado: <span class="num">${fmt(c.templateVol)} <span class="u">µL</span></span> por poço, já dispensado na normalização.</p>`;
@@ -1345,8 +1575,9 @@ function plateItems(step) {
 function renderPlate(step) {
   const items = plateItems(step), map = {}; items.forEach(r => map[r.dest] = r);
   const cyc = st(step.id).cycler;
-  let h = `<section class="panel"><div class="ctrls"><label class="field"><span class="label">Termociclador</span><select id="f-cycler"><option value="">— selecionar —</option>${reg.cyclers.map(c => `<option value="${c.id}" ${c.id === cyc ? 'selected' : ''}>${esc(c.code)}${c.desc ? ' · ' + esc(c.desc) : ''}</option>`).join('')}<option value="__new">+ Cadastrar termociclador…</option></select></label>
-    ${cyclerFor(cyc) ? '' : '<span class="chip warn">Selecione o termociclador desta corrida</span>'}</div>
+  const cycHtml = step.type !== 'plate' ? '' : `<div class="ctrls"><label class="field"><span class="label">Termociclador</span><select id="f-cycler"><option value="">— selecionar —</option>${reg.cyclers.map(c => `<option value="${c.id}" ${c.id === cyc ? 'selected' : ''}>${esc(c.code)}${c.desc ? ' · ' + esc(c.desc) : ''}</option>`).join('')}<option value="__new">+ Cadastrar termociclador…</option></select></label>
+    ${cyclerFor(cyc) ? '' : '<span class="chip warn">Selecione o termociclador desta corrida</span>'}</div>`;
+  let h = `<section class="panel">${step.type !== 'plate' ? '<div class="panel-h"><h3>Mapa da placa</h3></div>' : ''}${cycHtml}
     <div class="kpis"><div class="kpi"><span class="label">Reações</span><span class="num">${items.length}</span></div>
     <div class="kpi"><span class="label">Último poço</span><span class="num">${items.length ? items[items.length - 1].destWell : '—'}</span></div></div>
     <div class="legend"><span><i style="border-color:var(--m1)"></i>Amostra</span><span><i style="border-color:var(--m4)"></i>Controle +</span><span><i style="border-color:var(--m2);border-style:dashed"></i>Controle −</span><span><i style="border-color:var(--line);border-style:dotted"></i>Manual</span></div>
@@ -1480,8 +1711,8 @@ function editorDialog(tab) {
       ${proto().custom && KITS.some(k => k.id === kit.id) ? '<button class="btn" data-act="kit-reset">Voltar à versão do site</button>' : ''}<button class="btn ghost" data-act="close">Fechar</button></div>`
     : `<p class="hint">Estrutura comum a todos os kits: etapas (<span class="mono">intake</span>, <span class="mono">normalize</span>, <span class="mono">mastermix</span>, <span class="mono">plate</span>), descrições e checklists. Itens com <span class="mono">"auto"</span> são marcados pelo app.</p>
       <textarea id="proto-json" spellcheck="false">${esc(prettyJson(localFlow() || FLOW))}</textarea><div id="proto-err"></div>
-      <p class="hint">“Salvar fluxo” vale só neste navegador. Para valer para todos, baixe o <span class="mono">fluxo-pre-pcr.json</span> e envie ao GitHub.</p>
-      <div class="row"><button class="btn primary" data-act="flow-apply">Salvar fluxo</button><button class="btn" data-act="flow-dl">Baixar fluxo-pre-pcr.json</button>
+      <p class="hint">“Salvar fluxo” vale só neste navegador. Para valer para todos, baixe o <span class="mono">${FLOW_NAME}</span> e envie ao GitHub.</p>
+      <div class="row"><button class="btn primary" data-act="flow-apply">Salvar fluxo</button><button class="btn" data-act="flow-dl">Baixar ${FLOW_NAME}</button>
       ${flowLocal ? '<button class="btn" data-act="flow-reset">Voltar à versão do site</button>' : ''}<button class="btn ghost" data-act="close">Fechar</button></div>`;
   openDialog(`<h3>Editar protocolo</h3>${tabs}${body}`);
 }
@@ -1545,6 +1776,17 @@ document.addEventListener('click', async e => {
     case 'check': { const k = el.dataset.k; s.checks[k] = el.checked ? nowHM() + (run.meta.operator ? ' · ' + run.meta.operator : '') : false; render(); break; }
     case 'mode': s.overrides.mode = el.dataset.mode; render(); break;
     case 'border': s.overrides.benchOrder = el.dataset.o; render(); break;
+    case 'pkg-rm': { const k = el.dataset.key; s.pkgs = (s.pkgs || []).filter(p => p.key !== k); Object.keys(s.excl || {}).forEach(x => { if (x.startsWith(k + '|')) delete s.excl[x]; }); refreshPkgRows(step); render(); break; }
+    case 'pkg-well': { const id = el.dataset.key + '|' + el.dataset.w; (s.excl ||= {})[id] = !s.excl[id]; refreshPkgRows(step); render(); break; }
+    case 'pkg-col': case 'pkg-row': { const P = pkgState(step), k = el.dataset.key;
+      const ws = P.all.filter(w => w.key === k && (act === 'pkg-col' ? w.well.slice(1) === el.dataset.c : w.well[0] === el.dataset.r));
+      const turnOn = !ws.every(w => w.sel); ws.forEach(w => { s.excl[k + '|' + w.well] = !turnOn; }); refreshPkgRows(step); render(); break; }
+    case 'pkg-sel': { const P = pkgState(step), k = el.dataset.key, m = el.dataset.m;
+      P.all.filter(w => w.key === k).forEach(w => { s.excl[k + '|' + w.well] = m === 'none' || (m === 'pending' && !!w.claim); }); refreshPkgRows(step); render(); break; }
+    case 'layout': s.layout = el.dataset.l; refreshPkgRows(step); render(); break;
+    case 'timer': { const id = el.dataset.id, t = TIMERS[id];
+      if (t && !t.fired) { delete TIMERS[id]; render(); break; }
+      TIMERS[id] = { end: Date.now() + (+el.dataset.sec) * 1000 }; render(); break; }
     case 'handoff': s.handoffAt = stamp(); render(); saveFile(handoffName(), JSON.stringify(handoff(), null, 2)); break;
     case 'handoff-view': textDialog('Pacote para o pós-PCR', JSON.stringify(handoff(), null, 2), handoffName()); break;
     case 'pr-rm': delete s.postRun; render(); break;
@@ -1608,16 +1850,16 @@ document.addEventListener('click', async e => {
       const msg = validateFlow(o); if (msg) { $('#proto-err').innerHTML = `<div class="banner bad">${esc(msg)}</div>`; break; }
       store.set(FLOW_KEY, o); protocols = loadProtocols(); if (!stepById(run.current)) run.current = proto().steps[0].id; $('#dlg').close(); render(); toast('Fluxo salvo neste navegador'); break;
     }
-    case 'flow-dl': saveFile('fluxo-pre-pcr.json', prettyJson({ ...(localFlow() || FLOW), atualizadoEm: isoToBR(today()) }) + '\n'); break;
+    case 'flow-dl': saveFile(FLOW_NAME, prettyJson({ ...(localFlow() || FLOW), atualizadoEm: isoToBR(today()) }) + '\n'); break;
     case 'flow-reset': try { localStorage.removeItem(FLOW_KEY); } catch (e) {} protocols = loadProtocols(); $('#dlg').close(); render(); toast('Fluxo voltou à versão do site'); break;
   }
 });
 document.addEventListener('change', async e => {
   const el = e.target, s = st(run.current);
   if (el.id === 'f-proto') { if (el.value !== run.protocolId) pendingProtocol = el.value; render(); return; }
-  if (el.dataset.bind === 'meta.name') { run.meta.name = el.value.trim(); run.meta.nameAuto = !run.meta.name; render(); return; }
+  if (el.dataset.bind === 'meta.name') { run.meta.name = el.value.trim(); run.meta.nameAuto = !run.meta.name; if (!run.meta.name) render(); else { save(); syncAllClaims(); } return; }   // sem redesenhar: o clique seguinte do técnico não se perde
   if (el.dataset.bind === 'meta.operator') { if (el.value === '__new') { render(); regDialog('techs'); return; } run.meta.operator = el.value; render(); return; }
-  if (el.dataset.bind === 'meta.dateBR') { const iso = brToISO(el.value); if (!iso) { toast('Data inválida: use dd/mm/aaaa'); render(); return; } run.meta.date = iso; render(); return; }
+  if (el.dataset.bind === 'meta.dateBR') { const iso = brToISO(el.value); if (!iso) { toast('Data inválida: use dd/mm/aaaa'); render(); return; } run.meta.date = iso; save(); setTimeout(render, 250); return; }
   if (el.dataset.lot) { (st(run.current).lots ||= {})[el.dataset.lot] = el.value === '__new' ? '' : el.value; if (el.value === '__new') { render(); regDialog('reagents'); return; } render(); return; }
   if (el.id === 'f-cycler') { if (el.value === '__new') { render(); regDialog('cyclers'); return; } st(run.current).cycler = el.value; render(); return; }
   if (el.id === 'f-reg-import' && el.files?.length) { try { const o = JSON.parse(await el.files[0].text()), f = regFromFiles(o, o, o); editReg();
@@ -1643,6 +1885,7 @@ document.addEventListener('change', async e => {
     }
     else if (el.id === 'f-openrun') { try { const o = JSON.parse(await el.files[0].text()); const r = o.run || o; if (!protocols.some(p => p.id === r.protocolId)) { toast('Protocolo desta corrida não existe neste navegador'); return; } run = r; render(); toast('Corrida aberta'); } catch (err) { toast('Arquivo de corrida inválido'); } }
     else if (el.id === 'f-posrun') await loadPostRun(el.files[0]);
+    else if (el.id === 'f-pkg') await loadPkg(el.files);
     el.value = '';
   }
 });
@@ -1654,20 +1897,24 @@ document.addEventListener('input', e => {
 ['dragover', 'dragleave', 'drop'].forEach(t => document.addEventListener(t, e => {
   const z = e.target.closest?.('[data-drop]'); if (!z) return; e.preventDefault();
   z.classList.toggle('drag', t === 'dragover');
-  if (t === 'drop' && e.dataTransfer?.files?.length) { if (z.dataset.drop === 'posrun') loadPostRun(e.dataTransfer.files[0]); else handleFiles(e.dataTransfer.files); }
+  if (t === 'drop' && e.dataTransfer?.files?.length) { if (z.dataset.drop === 'pkg') loadPkg(e.dataTransfer.files); else if (z.dataset.drop === 'posrun') loadPostRun(e.dataTransfer.files[0]); else handleFiles(e.dataTransfer.files); }
 }));
 
 async function boot() {
+  if (MODULE === 'pos') { $('#brand-h').textContent = 'Bancada NGS · Pós-PCR'; $('#brand-s').textContent = 'Dos amplicons à biblioteca'; $('.f-batch .label').textContent = 'Rodada de biblioteca'; $('#f-run').placeholder = 'nome da rodada'; }
   $('#work').innerHTML = '<p class="hint">Carregando protocolos e cadastros…</p>';
   await loadRepo();
   protocols = loadProtocols();
   run = store.get(RUN_KEY);
-  if (!run || !protocols.some(p => p.id === run.protocolId)) { run = newRun(protocols[0].id, true); seedDemo(); }
+  if (run && !protocols.some(p => p.id === run.protocolId)) { const old = run.protocolId; run.protocolId = protocols[0].id; setTimeout(() => toast(`O kit “${old}” não existe mais; usando “${protocols[0].name}”`), 300); }
+  if (!run) { run = newRun(protocols[0].id, true); seedDemo(); }
+  run.id ||= uid();
   remapLegacy();
   render();
 }
 boot();
 </script>
+
 
 </body>
 </html>
