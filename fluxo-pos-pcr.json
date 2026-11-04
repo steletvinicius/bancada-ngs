@@ -87,7 +87,29 @@
         { "texto": "O mix é viscoso: homogeneizar bem por pipetagem lenta, sem formar bolhas.", "alerta": true },
         { "texto": "Dispensar {mixPorPoco} µL do mix em cada poço com {amostra} µL de amplicon normalizado.", "icone": "gelo" },
         { "texto": "Homogeneizar bem por pipetagem em cada poço (mix viscoso).", "alerta": true },
-        { "texto": "Selar a placa, dar spin brando e manter no gelo.", "icone": "gelo" }
+        { "texto": "Selar a placa, dar spin brando e manter no gelo.", "icone": "gelo" },
+        { "texto": "Levar a placa ao termociclador e rodar o programa de fragmentação do kit." }
+      ]
+    },
+    {
+      "id": "ligacao-barcodes",
+      "nome": "Ligação dos barcodes",
+      "area": "pos-pcr",
+      "tipo": "barcode",
+      "parametros": "mixLigacao",
+      "descricao": "Mix de ligação comum a todos os poços e um barcode específico por amplicon (placa de barcode 01–04 + poço). A associação amplicon → barcode fica registrada para as próximas etapas.",
+      "checklist": [
+        { "texto": "Cada amplicon com um barcode, sem repetição de placa + poço", "auto": "bc-ok" },
+        { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
+        { "texto": "Retirar a placa fragmentada do termociclador e dar spin brando." },
+        { "texto": "Manter {reagenteEnzimas} no gelo até o uso.", "icone": "gelo" },
+        "Descongelar as placas de barcode indicadas, dar spin e remover o selo só das colunas que serão usadas.",
+        "Preparar o mix de ligação (sem o barcode) nos volumes da tabela; homogeneizar por pipetagem e dar spin.",
+        "Dispensar {mixPorPoco} µL do mix em cada poço com amplicon fragmentado.",
+        { "texto": "Adicionar {barcodeVol} µL do barcode indicado na tabela em cada poço, trocando a ponteira a cada poço.", "alerta": true },
+        "Conferir a placa de barcode e o poço antes de cada transferência.",
+        "Homogeneizar por pipetagem, selar a placa e dar spin brando.",
+        "Selar novamente as placas de barcode e devolvê-las ao freezer."
       ]
     }
   ]

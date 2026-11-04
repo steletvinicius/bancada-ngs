@@ -112,6 +112,28 @@
             "Mix viscoso: homogeneizar bem por pipetagem no preparo e na dispensação.",
             "Reagentes e placa no gelo durante toda a manipulação."
           ]
+        },
+        "mixLigacao": {
+          "nome": "Mix de ligação",
+          "volumeAmostra": 24.5,
+          "excedentePercentual": 10,
+          "reagentes": [
+            { "nome": "Água Ultrapura", "volumePorAmostra": 12.5 },
+            { "nome": "Alltype Ligase buffer", "volumePorAmostra": 5.0 },
+            { "nome": "Alltype dNTP Mix", "volumePorAmostra": 1.0 },
+            { "nome": "Alltype Ligase Enzyme", "volumePorAmostra": 1.0 },
+            { "nome": "Alltype Nick Repair Pol", "volumePorAmostra": 4.0 }
+          ],
+          "barcode": {
+            "nome": "AllType Barcode",
+            "volumePorAmostra": 2.0,
+            "placas": [
+              "01",
+              "02",
+              "03",
+              "04"
+            ]
+          }
         }
       }
     },

@@ -112,6 +112,17 @@ button,input,select,textarea{font:inherit;color:inherit}
 .qpick{display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:16px 28px;align-items:start}
 @media (max-width:700px){.qpick{grid-template-columns:1fr}}
 .recipe{border:1px solid var(--line);border-left:4px solid var(--post);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--sunk)}
+.bcplates{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,300px));gap:12px 20px}
+.bcplate{display:flex;flex-direction:column;gap:4px}
+.bcplate-h{display:flex;justify-content:space-between;align-items:baseline}
+.mp .d.dupw,.legend i.dupw{background:repeating-linear-gradient(45deg,var(--bad) 0 2px,var(--surface) 2px 4px);border:2px solid var(--bad)}
+.mp .d.usedw{border:1.5px dashed var(--warn)}
+tr.dup td{background:var(--bad-bg)}
+.bcctl{align-items:end}
+.medvals{display:flex;flex-wrap:wrap;align-items:end;gap:6px 14px}
+.medvals > span:not(.plus){display:flex;flex-direction:column}
+.medvals b{font-size:22px;font-weight:500}
+.medvals .plus{font-size:20px;color:var(--muted);padding-bottom:2px}
 .recipe-h{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;justify-content:space-between}
 .calc{display:flex;flex-direction:column;gap:2px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
 .steps-mini{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:2px}
@@ -754,8 +765,8 @@ const NORM_DEFAULT = { mode: 'qiagility', target: 7, finalVol: 4.3, allowBelow: 
 /* Protocolo = fluxo comum (fluxo-pre-pcr.json) + kit (kits.json).
    O fluxo traz as etapas e checklists, iguais para todos; o kit traz só o que muda: QC, normalização, reagentes e volumes, termociclagem.
    As cópias embutidas abaixo são usadas só se os arquivos do site não puderem ser lidos. */
-const FLOW_FILE = {"atualizadoEm": "03/11/2026", "descricao": "Estrutura comum a todos os protocolos pós-PCR. Volumes, proporções e tempos vêm de kits.json (seção posPcr do kit). Textos entre chaves, como {beads}, são preenchidos com os valores do kit.", "etapas": [{"id": "amplicons", "nome": "Amplicons da PCR", "area": "pos-pcr", "tipo": "handoff", "descricao": "Importe um ou mais pacotes gerados no fim do pré-PCR e escolha os poços desta rodada: baterias inteiras, parte de uma bateria ou várias baterias juntas.", "checklist": [{"texto": "Pacote(s) do pré-PCR importado(s)", "auto": "pkg-loaded"}, {"texto": "Poços da rodada conferidos, sem divergência", "auto": "pkg-ok"}, "Retirar as placas do termociclador, dar spin e levar para a área pós-PCR."]}, {"id": "purificacao-amplicons", "nome": "Purificação dos amplicons", "area": "pos-pcr", "tipo": "cleanup", "parametros": "limpezaAmplicons", "descricao": "Lavagem dos amplicons com beads AMPure na proporção do kit, duas lavagens com etanol 75% e eluição em Low TE. Os passos com o ímã são feitos com a placa na rack magnética.", "checklist": [{"texto": "Retirar as beads ({reagenteBeads}) da geladeira e deixar em temperatura ambiente por {ambientarBeadsMin} min.", "timer": "ambientarBeadsMin"}, {"texto": "Preparar o etanol {etanolPct}% fresco: {etanolAgua} de água livre de nuclease + {etanolAbs} de {reagenteEtanol} ({etanolTotal}, margem de {etanolMargem}%). Ver o quadro de preparo."}, {"texto": "Lotes e validades dos reagentes registrados, nenhum vencido", "auto": "lots-ok"}, "Homogeneizar bem as beads e adicionar {beads} µL a cada poço com {amostra} µL de amplicon ({razao}×).", "Homogeneizar por pipetagem ou vórtex e dar spin brando.", {"texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin"}, {"texto": "Colocar a placa na rack magnética até separar as beads e manter a placa na rack.", "icone": "magneto"}, {"texto": "Aspirar e descartar o sobrenadante sem tocar nem aspirar as beads.", "icone": "magneto"}, {"texto": "Adicionar {etanol} µL de etanol {etanolPct}%.", "icone": "magneto"}, {"texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto"}, {"texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto"}, {"texto": "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).", "icone": "magneto"}, {"texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto"}, {"texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto"}, {"texto": "Retirar o sobrenadante residual com ponteira de 10 µL.", "icone": "magneto"}, "Retirar a placa da rack magnética e deixar o etanol residual evaporar.", {"texto": "Não deixar as beads secarem demais.", "alerta": true}, "Adicionar {eluicao} µL de {reagenteEluicao} sobre o pellet de beads.", "Homogeneizar por pipetagem até dissolver o pellet de beads.", {"texto": "Incubar {eluicaoMin} min em temperatura ambiente.", "timer": "eluicaoMin"}, {"texto": "Colocar a placa na rack magnética e aguardar a separação das beads.", "icone": "magneto"}, {"texto": "Transferir {transferencia} µL do sobrenadante para a placa nova, nos poços indicados no mapa.", "icone": "magneto"}]}, {"id": "quantificacao-amplicons", "nome": "Quantificação e diluição dos amplicons", "area": "pos-pcr", "tipo": "quant", "parametros": "quantificacao", "descricao": "Quantificação de parte dos amplicons purificados no Qubit dsDNA BR (1 µL de amplicon) e diluição de todos os poços para a massa e o volume do kit. Poços não quantificados usam a mediana dos medidos.", "checklist": [{"texto": "Amplicons a quantificar escolhidos (controles + amostragem)", "auto": "quant-sel"}, {"texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok"}, "Deixar os padrões e o {reagenteQubit} em temperatura ambiente antes de usar.", "Preparar a solução de trabalho: {trabalhoReagente} de reagente + {trabalhoTampao} de tampão ({trabalhoTotal} para {tubosQubit} tubos), em tubo plástico, protegido da luz.", "Identificar os tubos do Qubit na tampa (não na parede).", "Padrões: {volTrabalhoPadrao} µL de solução de trabalho + {volPadrao} µL de cada padrão.", "Amplicons: {volTrabalhoAmostra} µL de solução de trabalho + {input} µL de cada amplicon purificado selecionado.", "Homogeneizar no vórtex por 2–3 s e dar spin rápido.", {"texto": "Incubar {incubacaoMin} min em temperatura ambiente, protegido da luz.", "timer": "incubacaoMin"}, "Ler os padrões e os amplicons no Qubit (volume de amostra: {input} µL).", {"texto": "Leituras registradas e volumes calculados para todos os poços", "auto": "quant-done"}, "Em uma placa nova, pipetar o diluente e depois o amplicon de cada poço, conforme o mapa de pipetagem ({massa} ng em {volumeFinal} µL).", "Homogeneizar por pipetagem, selar e dar spin brando."]}, {"id": "mix-fragmentacao", "nome": "Master mix de fragmentação", "area": "pos-pcr", "tipo": "mix", "parametros": "mixFragmentacao", "icones": ["gelo"], "descricao": "Preparo e dispensação do mix de fragmentação sobre os amplicons normalizados. Reagentes e placa no gelo durante toda a manipulação.", "checklist": [{"texto": "Colocar a placa com os amplicons normalizados no gelo e mantê-la no gelo durante toda a manipulação.", "icone": "gelo", "alerta": true}, {"texto": "Manter {reagente1} e {reagente2} no gelo.", "icone": "gelo"}, {"texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok"}, {"texto": "Preparar o mix em microtubo no gelo, nos volumes da tabela.", "icone": "gelo"}, {"texto": "O mix é viscoso: homogeneizar bem por pipetagem lenta, sem formar bolhas.", "alerta": true}, {"texto": "Dispensar {mixPorPoco} µL do mix em cada poço com {amostra} µL de amplicon normalizado.", "icone": "gelo"}, {"texto": "Homogeneizar bem por pipetagem em cada poço (mix viscoso).", "alerta": true}, {"texto": "Selar a placa, dar spin brando e manter no gelo.", "icone": "gelo"}]}]};
-const KITS_FILE = {"atualizadoEm": "03/11/2026", "kits": [{"id": "alltype-ngs-11-loci-meia", "nome": "Altype NGS 11 Loci - meia receita", "versao": "0.3", "descricao": "Genotipagem de 11 loci HLA (HLA-A, -B, -C, -DRB1, -DRB345, -DQB1, -DPB1, -DQA1, -DPA1) com amplificação multiplex) - (meia receita).", "qc": {"concMinima": 7, "razao260280Min": 1.6, "razao260280Max": 2.1}, "normalizacao": {"concAlvo": 7, "volumeFinal": 4.3, "modoPadrao": "qiagility", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 20, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "Alltype multiplex", "volumeReacao": 10, "volumeDNA": 4.3, "excedentePercentual": 10, "reagentes": [{"nome": "Alltype Buffer", "volumePorAmostra": 2}, {"nome": "AllType dNTP", "volumePorAmostra": 0.8}, {"nome": "AllType Primer", "volumePorAmostra": 2.5}, {"nome": "AllType Polimerase", "volumePorAmostra": 0.4}]}, "termociclagem": [{"etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1"}, {"etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30"}, {"etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": ""}, {"etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": ""}, {"etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1"}, {"etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": ""}], "avisos": ["Reagentes, volumes e termociclagem de exemplo: substitua pelos do kit validado."], "posPcr": {"limpezaAmplicons": {"nome": "Purificação AMPure 0,6×", "volumeAmostra": 10, "razaoBeads": 0.6, "volumeEtanol": 50, "lavagensEtanol": 2, "etanolPercentual": 75, "volumeEluicao": 13.5, "volumeTransferencia": 12.5, "excedentePercentual": 10, "reagentes": {"beads": "AMPure XP beads", "etanol": "Etanol absoluto", "eluicao": "Low TE"}, "tempos": {"ambientarBeadsMin": 30, "ligacaoMin": 5, "etanolSeg": 30, "eluicaoMin": 2}, "excedenteEtanolPercentual": 20}, "quantificacao": {"nome": "Quantificação dos amplicons purificados", "metodo": "Qubit dsDNA BR", "volumeInput": 1, "massaAlvo": 50, "volumeFinal": 17.5, "diluente": "Água livre de nuclease", "volumeMinimo": 1, "casasDecimais": 1, "fracaoAmostragem": 0.3, "fracaoFaixa": 0.15, "faixaMin": 20, "faixaMax": 50, "qubit": {"padroes": 2, "volumePadrao": 10, "volumeTrabalho": 200, "diluicaoReagente": 200, "excedentePercentual": 10}, "reagentes": {"kit": "Qubit dsDNA BR Assay Kit"}, "tempos": {"incubacaoMin": 2}}, "mixFragmentacao": {"nome": "Mix de fragmentação", "volumeAmostra": 17.5, "excedentePercentual": 10, "reagentes": [{"nome": "AllType Fragmentase", "volumePorAmostra": 4.5}, {"nome": "AllType Fragmentation Buffer", "volumePorAmostra": 2.5}], "avisos": ["Mix viscoso: homogeneizar bem por pipetagem no preparo e na dispensação.", "Reagentes e placa no gelo durante toda a manipulação."]}}}, {"id": "ngsgo-mx6-meia-receita", "nome": "NGSgo 6 loci - meia receita", "versao": "0.2", "descricao": "Protocolo para amplificação de 6 genes HLA (HLA-A, -B, -C, -DRB1, -DQB1, -DPB1).", "qc": {"concMinima": 5}, "normalizacao": {"concAlvo": 15, "volumeFinal": 4.13, "modoPadrao": "qiagility", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 10, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "Painel", "volumeReacao": 7.5, "volumeDNA": 4.13, "excedentePercentual": 10, "reagentes": [{"nome": "GenDx LongMix (4x)", "volumePorAmostra": 1.87}, {"nome": "NGSgo-Mx6-1 primer", "volumePorAmostra": 0.75}, {"nome": "Enhancer", "volumePorAmostra": 0.75}, {"nome": "Água livre de nuclease", "volumePorAmostra": 0}]}, "termociclagem": [{"etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1"}, {"etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30"}, {"etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": ""}, {"etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": ""}, {"etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1"}, {"etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": ""}], "avisos": ["Kit de exemplo."]}]};
+const FLOW_FILE = {"atualizadoEm": "03/11/2026", "descricao": "Estrutura comum a todos os protocolos pós-PCR. Volumes, proporções e tempos vêm de kits.json (seção posPcr do kit). Textos entre chaves, como {beads}, são preenchidos com os valores do kit.", "etapas": [{"id": "amplicons", "nome": "Amplicons da PCR", "area": "pos-pcr", "tipo": "handoff", "descricao": "Importe um ou mais pacotes gerados no fim do pré-PCR e escolha os poços desta rodada: baterias inteiras, parte de uma bateria ou várias baterias juntas.", "checklist": [{"texto": "Pacote(s) do pré-PCR importado(s)", "auto": "pkg-loaded"}, {"texto": "Poços da rodada conferidos, sem divergência", "auto": "pkg-ok"}, "Retirar as placas do termociclador, dar spin e levar para a área pós-PCR."]}, {"id": "purificacao-amplicons", "nome": "Purificação dos amplicons", "area": "pos-pcr", "tipo": "cleanup", "parametros": "limpezaAmplicons", "descricao": "Lavagem dos amplicons com beads AMPure na proporção do kit, duas lavagens com etanol 75% e eluição em Low TE. Os passos com o ímã são feitos com a placa na rack magnética.", "checklist": [{"texto": "Retirar as beads ({reagenteBeads}) da geladeira e deixar em temperatura ambiente por {ambientarBeadsMin} min.", "timer": "ambientarBeadsMin"}, {"texto": "Preparar o etanol {etanolPct}% fresco: {etanolAgua} de água livre de nuclease + {etanolAbs} de {reagenteEtanol} ({etanolTotal}, margem de {etanolMargem}%). Ver o quadro de preparo."}, {"texto": "Lotes e validades dos reagentes registrados, nenhum vencido", "auto": "lots-ok"}, "Homogeneizar bem as beads e adicionar {beads} µL a cada poço com {amostra} µL de amplicon ({razao}×).", "Homogeneizar por pipetagem ou vórtex e dar spin brando.", {"texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin"}, {"texto": "Colocar a placa na rack magnética até separar as beads e manter a placa na rack.", "icone": "magneto"}, {"texto": "Aspirar e descartar o sobrenadante sem tocar nem aspirar as beads.", "icone": "magneto"}, {"texto": "Adicionar {etanol} µL de etanol {etanolPct}%.", "icone": "magneto"}, {"texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto"}, {"texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto"}, {"texto": "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).", "icone": "magneto"}, {"texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto"}, {"texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto"}, {"texto": "Retirar o sobrenadante residual com ponteira de 10 µL.", "icone": "magneto"}, "Retirar a placa da rack magnética e deixar o etanol residual evaporar.", {"texto": "Não deixar as beads secarem demais.", "alerta": true}, "Adicionar {eluicao} µL de {reagenteEluicao} sobre o pellet de beads.", "Homogeneizar por pipetagem até dissolver o pellet de beads.", {"texto": "Incubar {eluicaoMin} min em temperatura ambiente.", "timer": "eluicaoMin"}, {"texto": "Colocar a placa na rack magnética e aguardar a separação das beads.", "icone": "magneto"}, {"texto": "Transferir {transferencia} µL do sobrenadante para a placa nova, nos poços indicados no mapa.", "icone": "magneto"}]}, {"id": "quantificacao-amplicons", "nome": "Quantificação e diluição dos amplicons", "area": "pos-pcr", "tipo": "quant", "parametros": "quantificacao", "descricao": "Quantificação de parte dos amplicons purificados no Qubit dsDNA BR (1 µL de amplicon) e diluição de todos os poços para a massa e o volume do kit. Poços não quantificados usam a mediana dos medidos.", "checklist": [{"texto": "Amplicons a quantificar escolhidos (controles + amostragem)", "auto": "quant-sel"}, {"texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok"}, "Deixar os padrões e o {reagenteQubit} em temperatura ambiente antes de usar.", "Preparar a solução de trabalho: {trabalhoReagente} de reagente + {trabalhoTampao} de tampão ({trabalhoTotal} para {tubosQubit} tubos), em tubo plástico, protegido da luz.", "Identificar os tubos do Qubit na tampa (não na parede).", "Padrões: {volTrabalhoPadrao} µL de solução de trabalho + {volPadrao} µL de cada padrão.", "Amplicons: {volTrabalhoAmostra} µL de solução de trabalho + {input} µL de cada amplicon purificado selecionado.", "Homogeneizar no vórtex por 2–3 s e dar spin rápido.", {"texto": "Incubar {incubacaoMin} min em temperatura ambiente, protegido da luz.", "timer": "incubacaoMin"}, "Ler os padrões e os amplicons no Qubit (volume de amostra: {input} µL).", {"texto": "Leituras registradas e volumes calculados para todos os poços", "auto": "quant-done"}, "Em uma placa nova, pipetar o diluente e depois o amplicon de cada poço, conforme o mapa de pipetagem ({massa} ng em {volumeFinal} µL).", "Homogeneizar por pipetagem, selar e dar spin brando."]}, {"id": "mix-fragmentacao", "nome": "Master mix de fragmentação", "area": "pos-pcr", "tipo": "mix", "parametros": "mixFragmentacao", "icones": ["gelo"], "descricao": "Preparo e dispensação do mix de fragmentação sobre os amplicons normalizados. Reagentes e placa no gelo durante toda a manipulação.", "checklist": [{"texto": "Colocar a placa com os amplicons normalizados no gelo e mantê-la no gelo durante toda a manipulação.", "icone": "gelo", "alerta": true}, {"texto": "Manter {reagente1} e {reagente2} no gelo.", "icone": "gelo"}, {"texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok"}, {"texto": "Preparar o mix em microtubo no gelo, nos volumes da tabela.", "icone": "gelo"}, {"texto": "O mix é viscoso: homogeneizar bem por pipetagem lenta, sem formar bolhas.", "alerta": true}, {"texto": "Dispensar {mixPorPoco} µL do mix em cada poço com {amostra} µL de amplicon normalizado.", "icone": "gelo"}, {"texto": "Homogeneizar bem por pipetagem em cada poço (mix viscoso).", "alerta": true}, {"texto": "Selar a placa, dar spin brando e manter no gelo.", "icone": "gelo"}, {"texto": "Levar a placa ao termociclador e rodar o programa de fragmentação do kit."}]}, {"id": "ligacao-barcodes", "nome": "Ligação dos barcodes", "area": "pos-pcr", "tipo": "barcode", "parametros": "mixLigacao", "descricao": "Mix de ligação comum a todos os poços e um barcode específico por amplicon (placa de barcode 01–04 + poço). A associação amplicon → barcode fica registrada para as próximas etapas.", "checklist": [{"texto": "Cada amplicon com um barcode, sem repetição de placa + poço", "auto": "bc-ok"}, {"texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok"}, {"texto": "Retirar a placa fragmentada do termociclador e dar spin brando."}, {"texto": "Manter {reagenteEnzimas} no gelo até o uso.", "icone": "gelo"}, "Descongelar as placas de barcode indicadas, dar spin e remover o selo só das colunas que serão usadas.", "Preparar o mix de ligação (sem o barcode) nos volumes da tabela; homogeneizar por pipetagem e dar spin.", "Dispensar {mixPorPoco} µL do mix em cada poço com amplicon fragmentado.", {"texto": "Adicionar {barcodeVol} µL do barcode indicado na tabela em cada poço, trocando a ponteira a cada poço.", "alerta": true}, "Conferir a placa de barcode e o poço antes de cada transferência.", "Homogeneizar por pipetagem, selar a placa e dar spin brando.", "Selar novamente as placas de barcode e devolvê-las ao freezer."]}]};
+const KITS_FILE = {"atualizadoEm": "03/11/2026", "kits": [{"id": "alltype-ngs-11-loci-meia", "nome": "Altype NGS 11 Loci - meia receita", "versao": "0.3", "descricao": "Genotipagem de 11 loci HLA (HLA-A, -B, -C, -DRB1, -DRB345, -DQB1, -DPB1, -DQA1, -DPA1) com amplificação multiplex) - (meia receita).", "qc": {"concMinima": 7, "razao260280Min": 1.6, "razao260280Max": 2.1}, "normalizacao": {"concAlvo": 7, "volumeFinal": 4.3, "modoPadrao": "qiagility", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 20, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "Alltype multiplex", "volumeReacao": 10, "volumeDNA": 4.3, "excedentePercentual": 10, "reagentes": [{"nome": "Alltype Buffer", "volumePorAmostra": 2}, {"nome": "AllType dNTP", "volumePorAmostra": 0.8}, {"nome": "AllType Primer", "volumePorAmostra": 2.5}, {"nome": "AllType Polimerase", "volumePorAmostra": 0.4}]}, "termociclagem": [{"etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1"}, {"etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30"}, {"etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": ""}, {"etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": ""}, {"etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1"}, {"etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": ""}], "avisos": ["Reagentes, volumes e termociclagem de exemplo: substitua pelos do kit validado."], "posPcr": {"limpezaAmplicons": {"nome": "Purificação AMPure 0,6×", "volumeAmostra": 10, "razaoBeads": 0.6, "volumeEtanol": 50, "lavagensEtanol": 2, "etanolPercentual": 75, "volumeEluicao": 13.5, "volumeTransferencia": 12.5, "excedentePercentual": 10, "reagentes": {"beads": "AMPure XP beads", "etanol": "Etanol absoluto", "eluicao": "Low TE"}, "tempos": {"ambientarBeadsMin": 30, "ligacaoMin": 5, "etanolSeg": 30, "eluicaoMin": 2}, "excedenteEtanolPercentual": 20}, "quantificacao": {"nome": "Quantificação dos amplicons purificados", "metodo": "Qubit dsDNA BR", "volumeInput": 1, "massaAlvo": 50, "volumeFinal": 17.5, "diluente": "Água livre de nuclease", "volumeMinimo": 1, "casasDecimais": 1, "fracaoAmostragem": 0.3, "fracaoFaixa": 0.15, "faixaMin": 20, "faixaMax": 50, "qubit": {"padroes": 2, "volumePadrao": 10, "volumeTrabalho": 200, "diluicaoReagente": 200, "excedentePercentual": 10}, "reagentes": {"kit": "Qubit dsDNA BR Assay Kit"}, "tempos": {"incubacaoMin": 2}}, "mixFragmentacao": {"nome": "Mix de fragmentação", "volumeAmostra": 17.5, "excedentePercentual": 10, "reagentes": [{"nome": "AllType Fragmentase", "volumePorAmostra": 4.5}, {"nome": "AllType Fragmentation Buffer", "volumePorAmostra": 2.5}], "avisos": ["Mix viscoso: homogeneizar bem por pipetagem no preparo e na dispensação.", "Reagentes e placa no gelo durante toda a manipulação."]}, "mixLigacao": {"nome": "Mix de ligação", "volumeAmostra": 24.5, "excedentePercentual": 10, "reagentes": [{"nome": "Água Ultrapura", "volumePorAmostra": 12.5}, {"nome": "Alltype Ligase buffer", "volumePorAmostra": 5.0}, {"nome": "Alltype dNTP Mix", "volumePorAmostra": 1.0}, {"nome": "Alltype Ligase Enzyme", "volumePorAmostra": 1.0}, {"nome": "Alltype Nick Repair Pol", "volumePorAmostra": 4.0}], "barcode": {"nome": "AllType Barcode", "volumePorAmostra": 2.0, "placas": ["01", "02", "03", "04"]}}}}, {"id": "ngsgo-mx6-meia-receita", "nome": "NGSgo 6 loci - meia receita", "versao": "0.2", "descricao": "Protocolo para amplificação de 6 genes HLA (HLA-A, -B, -C, -DRB1, -DQB1, -DPB1).", "qc": {"concMinima": 5}, "normalizacao": {"concAlvo": 15, "volumeFinal": 4.13, "modoPadrao": "qiagility", "volumeMinimoRobo": 1, "volumeMortoDiluente": 15, "abaixoDoAlvoUsarPuro": true, "ajusteAutomatico": true, "itensManuaisNoFim": true, "bancada": {"volumePreparo": 10, "volumeMinimo": 1, "volumeMaximo": 100}}, "masterMix": {"nome": "Painel", "volumeReacao": 7.5, "volumeDNA": 4.13, "excedentePercentual": 10, "reagentes": [{"nome": "GenDx LongMix (4x)", "volumePorAmostra": 1.87}, {"nome": "NGSgo-Mx6-1 primer", "volumePorAmostra": 0.75}, {"nome": "Enhancer", "volumePorAmostra": 0.75}, {"nome": "Água livre de nuclease", "volumePorAmostra": 0}]}, "termociclagem": [{"etapa": "Desnaturação inicial", "temperatura": "95 °C", "tempo": "3 min", "ciclos": "1"}, {"etapa": "Desnaturação", "temperatura": "98 °C", "tempo": "20 s", "ciclos": "30"}, {"etapa": "Anelamento", "temperatura": "65 °C", "tempo": "15 s", "ciclos": ""}, {"etapa": "Extensão", "temperatura": "68 °C", "tempo": "6 min", "ciclos": ""}, {"etapa": "Extensão final", "temperatura": "68 °C", "tempo": "10 min", "ciclos": "1"}, {"etapa": "Manutenção", "temperatura": "4 °C", "tempo": "∞", "ciclos": ""}], "avisos": ["Kit de exemplo."]}]};
 let FLOW = FLOW_FILE, KITS = KITS_FILE.kits;
 const NORM_MAP = [['target', 'concAlvo'], ['finalVol', 'volumeFinal'], ['mode', 'modoPadrao'], ['minVolAuto', 'volumeMinimoRobo'], ['dilDeadVol', 'volumeMortoDiluente'],
   ['allowBelow', 'abaixoDoAlvoUsarPuro'], ['autoAdjust', 'ajusteAutomatico'], ['manualAtEnd', 'itensManuaisNoFim'], ['prepVol', 'bancada.volumePreparo'], ['minVolBench', 'bancada.volumeMinimo'], ['maxVol', 'bancada.volumeMaximo']];
@@ -779,6 +790,14 @@ function composeProtocol(flow, kit) {
       }
       if (e.tipo === 'plate') st.config = { rows: 8, cols: 12 };
       if (e.tipo === 'cleanup' || e.tipo === 'handoff' || e.tipo === 'quant') st.config = clone(getPath(kit, 'posPcr.' + (e.parametros || '')) || {});
+      if (e.tipo === 'barcode') {   // mix de ligação + barcode específico por poço
+        const q = getPath(kit, 'posPcr.' + (e.parametros || '')) || {}, comps = (q.reagentes || []).map(r => ({ name: r.nome, vol: +r.volumePorAmostra || 0 })), bc = q.barcode || {};
+        st.post = true;
+        st.config = { rxnVol: (+q.volumeAmostra || 0) + comps.reduce((a, k) => a + k.vol, 0) + (+bc.volumePorAmostra || 0), templateVol: +q.volumeAmostra || 0, overage: q.excedentePercentual ?? 10, controls: [],
+          mixes: comps.length ? [{ name: q.nome || 'Mix', components: comps }] : [], program: [], post: true, tempos: q.tempos || {}, empty: !comps.length, barcode: bc, extraVol: +bc.volumePorAmostra || 0,
+          templateHint: `Amplicon fragmentado: <span class="num">${fmt(+q.volumeAmostra || 0)} <span class="u">µL</span></span> por poço. Barcode: <span class="num">${fmt(+bc.volumePorAmostra || 0)} <span class="u">µL</span></span> por poço, adicionado à parte (específico de cada poço).` };
+        st.warnings = q.avisos || [];
+      }
       if (e.tipo === 'mix') {   // mix do pós-PCR (ex.: fragmentação): mesmo motor do master mix, volumes de kits.json → posPcr
         const q = getPath(kit, 'posPcr.' + (e.parametros || '')) || {}, comps = (q.reagentes || []).map(r => ({ name: r.nome, vol: +r.volumePorAmostra || 0 }));
         st.type = 'mastermix'; st.post = true;
@@ -804,7 +823,7 @@ function validateKit(k) {
 }
 function validateFlow(f) {
   if (!f || !Array.isArray(f.etapas) || !f.etapas.length) return 'Falta a lista "etapas".';
-  const types = ['intake', 'normalize', 'mastermix', 'plate', 'placeholder', 'handoff', 'cleanup', 'quant', 'mix'];
+  const types = ['intake', 'normalize', 'mastermix', 'plate', 'placeholder', 'handoff', 'cleanup', 'quant', 'mix', 'barcode'];
   for (const e of f.etapas) { if (!e.id || !e.nome) return 'Toda etapa precisa de "id" e "nome".'; if (!types.includes(e.tipo)) return `Etapa "${e.id}": tipo "${e.tipo}" desconhecido.`; }
   if (new Set(f.etapas.map(e => e.id)).size !== f.etapas.length) return 'Há etapas com "id" repetido.';
   return null;
@@ -1013,7 +1032,8 @@ function outputOf(step) {
     case 'intake': return intakeState(step).rows.filter(r => r.include).map(({ qc, include, found, edited, ...r }) => r);
     case 'normalize': return normState(step).items;
     case 'handoff': return pkgState(step)?.rows || [];
-    case 'quant': return quantState(step).items.map(({ key, sel, why, status, ...r }) => ({ ...r, quantified: sel && r.qubit > 0, note: status[1] }));
+    case 'barcode': return bcState(step).items.map(({ key, ok, other, dup, wellRaw, edited, plate, well, ...r }) => ({ ...r, bcPlate: ok ? plate : null, bcWell: ok ? well : null, barcode: ok ? bcId(plate, well) : null }));
+    case 'quant': return quantState(step).items.map(({ key, sel, why, status, calc, used, ...r }) => ({ ...r, quantified: sel && r.qubit > 0, usedCalc: used, calcVol: calc ? calc.vAmp : null, note: status[1] }));
     default: return s.rows;
   }
 }
@@ -1097,6 +1117,7 @@ function autoCheck(step, key) {
     case 'cycler-set': return !!cyclerFor(s.cycler);
     case 'handoff-done': return !!s.handoffAt;
     case 'pkg-loaded': migratePkg(s); return !!(s.pkgs || []).length;
+    case 'bc-ok': { const B = bcState(step); return B.items.length > 0 && !B.dups.length && !B.empty.length; }
     case 'quant-sel': return quantState(step).selected.length > 0;
     case 'quant-done': { const Q = quantState(step); return Q.selected.length > 0 && !Q.pending && Q.items.every(i => i.vAmp != null); }
     case 'pkg-ok': { const P = pkgState(step); return !!P && P.rows.length > 0 && !P.issues.some(x => x[0] === 'bad'); }
@@ -1208,7 +1229,7 @@ function syncClaims(step) {
   Object.keys(c).forEach(k => { if (!Object.keys(c[k]).length) delete c[k]; });
   store.set(CONS_KEY, c);
 }
-function syncAllClaims() { if (MODULE !== 'pos' || !run) return; const h = proto().steps.find(x => x.type === 'handoff'); if (h && (st(h.id).pkgs || []).length && !run.demo) syncClaims(h); }
+function syncAllClaims() { if (MODULE !== 'pos' || !run) return; if (!run.demo) proto().steps.filter(x => x.type === 'barcode' && st(x.id).bc).forEach(syncBc); const h = proto().steps.find(x => x.type === 'handoff'); if (h && (st(h.id).pkgs || []).length && !run.demo) syncClaims(h); }
 function releaseClaims(runId) { const c = consGet(); Object.values(c).forEach(m => Object.keys(m).forEach(w => { if (m[w].runId === runId) delete m[w]; })); store.set(CONS_KEY, c); }
 function migratePkg(s) {   // versão anterior guardava um só pacote
   if (s.pkg && !s.pkgs) { const key = pkgKeyOf(s.pkg), ex = {}; Object.keys(s.excl || {}).forEach(w => { if (s.excl[w]) ex[key + '|' + w] = true; });
@@ -1322,6 +1343,8 @@ const tubeFor = v => v <= 1400 ? 'microtubo de 1,5 mL' : v <= 1900 ? 'microtubo 
 function stepVars(step) {
   if (step.type === 'cleanup') return cleanupState(step).vars;
   if (step.type === 'quant') return quantState(step).vars;
+  if (step.type === 'barcode') { const m = mmState(step), x = m.mixes[0];
+    return { mixPorPoco: x ? x.perRx : null, amostra: step.config.templateVol, reacoes: m.nRx, barcodeVol: bcCfg(step).vol, barcode: bcCfg(step).name, reagenteEnzimas: joinPt((x?.components || []).map(k => k.name).filter(n => /enzyme|enzima|\bpol\b|polimerase|ligase$/i.test(n))) || 'as enzimas', volumeFinal: step.config.rxnVol, ...(step.config.tempos || {}) }; }
   if (step.type === 'mastermix' && step.post) { const m = mmState(step), x = m.mixes[0];
     return { mixPorPoco: x ? x.perRx : null, amostra: step.config.templateVol, reacoes: m.nRx, ...Object.fromEntries((x?.components || []).map((k, i) => ['reagente' + (i + 1), k.name])), ...(step.config.tempos || {}) }; }
   return null;
@@ -1406,19 +1429,25 @@ function quantState(step) {
   const sel = s.qsel || {}, why = s.qwhy || {}, qv = s.qv || {};
   const measuredS = rows.filter(r => r.kind === 'sample' && sel[rk(r)] && qv[rk(r)] > 0).map(r => qv[rk(r)]);
   const med = median(measuredS);
+  // volume pela mediana: arredondado para o mínimo de pipetagem quando ficaria abaixo dele
+  const medRaw = med != null ? q.mass / med : null;
+  const medVol = medRaw == null ? null : medRaw > q.finalVol ? q.finalVol : Math.max(q.minVol, roundTo(medRaw, q.dec)), medDil = medVol == null ? null : roundTo(q.finalVol - medVol, q.dec);
+  const use = s.quse || {};
   const items = rows.map(r => {
     const key = rk(r), isSel = !!sel[key], val = isSel && qv[key] != null ? qv[key] : null;
-    const o = { ...r, key, sel: isSel, why: isSel ? (why[key] || 'manual') : null, qubit: val, base: null, conc: null, vAmp: null, vDil: null, mass: null, predil: 0, status: ['info', 'Aguardando quantificação'] };
-    if (r.kind === 'cn') { o.conc = med; o.base = 'mediana'; }
-    else if (val > 0) { o.conc = val; o.base = 'medido'; }
-    else if (med != null) { o.conc = med; o.base = 'mediana'; }
-    if (o.conc == null) return o;
-    let v = q.mass / o.conc;
-    if (v > q.finalVol) { o.vAmp = q.finalVol; o.vDil = 0; o.mass = q.finalVol * o.conc; o.status = ['warn', `Abaixo de ${fmtN(q.mass)} ng: ${fmtN(roundTo(o.mass, 1))} ng (amplicon puro)`]; }
-    else if (v < q.minVol) { const f = [2, 5, 10, 20, 50, 100].find(x => v * x >= q.minVol) || 100; o.predil = f; o.vAmp = roundTo(v * f, q.dec); o.vDil = roundTo(q.finalVol - o.vAmp, q.dec); o.mass = o.vAmp * o.conc / f;
-      o.status = ['warn', `Pré-diluir 1:${f} (${fmtN(q.minVol)} µL + ${fmtN(q.minVol * (f - 1))} µL de diluente)`]; }
-    else { o.vAmp = roundTo(v, q.dec); o.vDil = roundTo(q.finalVol - o.vAmp, q.dec); o.mass = o.vAmp * o.conc; o.status = o.base === 'medido' ? ['ok', 'Medido'] : ['info', r.kind === 'cn' ? 'CN: volume da mediana' : 'Pela mediana']; }
-    if (r.kind === 'cn') o.status = ['info', 'CN: volume da mediana'];
+    const o = { ...r, key, sel: isSel, why: isSel ? (why[key] || 'manual') : null, qubit: val, calc: null, used: false, base: null, conc: null, vAmp: null, vDil: null, mass: null, predil: 0, status: ['info', 'Aguardando quantificação'] };
+    if (val > 0 && r.kind !== 'cn') {   // volume calculado pela leitura do próprio poço
+      const v = q.mass / val, c = { conc: val, predil: 0 };
+      if (v > q.finalVol) Object.assign(c, { vAmp: q.finalVol, vDil: 0, mass: q.finalVol * val, status: ['warn', `Abaixo de ${fmtN(q.mass)} ng: ${fmtN(roundTo(q.finalVol * val, 1))} ng (amplicon puro)`] });
+      else if (v < q.minVol) { const f = [2, 5, 10, 20, 50, 100].find(x => v * x >= q.minVol) || 100, va = roundTo(v * f, q.dec);
+        Object.assign(c, { predil: f, vAmp: va, vDil: roundTo(q.finalVol - va, q.dec), mass: va * val / f, status: ['warn', `Pré-diluir 1:${f} (${fmtN(q.minVol)} µL + ${fmtN(q.minVol * (f - 1))} µL de diluente)`] }); }
+      else { const va = roundTo(v, q.dec); Object.assign(c, { vAmp: va, vDil: roundTo(q.finalVol - va, q.dec), mass: va * val, status: ['ok', 'Volume calculado'] }); }
+      o.calc = c;
+    }
+    if (o.calc && use[key]) { Object.assign(o, { used: true, base: 'medido', conc: o.calc.conc, vAmp: o.calc.vAmp, vDil: o.calc.vDil, mass: o.calc.mass, predil: o.calc.predil, status: o.calc.status }); return o; }
+    if (medVol == null) return o;
+    Object.assign(o, { base: 'mediana', conc: med, vAmp: medVol, vDil: medDil, mass: medVol * med,
+      status: ['info', r.kind === 'cn' ? 'CN: volume da mediana' : o.calc ? 'Quantificado; usou a mediana' : 'Pela mediana'] });
     return o;
   });
   const selected = items.filter(i => i.sel), pending = selected.filter(i => i.kind !== 'cn' && !(i.qubit > 0)).length;
@@ -1426,7 +1455,7 @@ function quantState(step) {
   const qubit = { nTubes, ws, reagent: ws / (+Q.diluicaoReagente || 200), buffer: ws - ws / (+Q.diluicaoReagente || 200), sampleWs: (+Q.volumeTrabalho || 200) - q.input, stdWs: (+Q.volumeTrabalho || 200) - (+Q.volumePadrao || 10) };
   const vars = { input: q.input, massa: q.mass, volumeFinal: q.finalVol, diluente: q.diluente, nQuant: selected.length, metodo: q.metodo, reagenteQubit: q.reagentes.kit,
     trabalhoTotal: mlTxt(qubit.ws), trabalhoReagente: mlTxt(qubit.reagent), trabalhoTampao: mlTxt(qubit.buffer), tubosQubit: nTubes, volTrabalhoAmostra: qubit.sampleWs, volTrabalhoPadrao: qubit.stdWs, volPadrao: +Q.volumePadrao || 10, padroes: +Q.padroes || 2, ...q.tempos };
-  return { q, items, selected, pending, med, measured: measuredS, qubit, vars };
+  return { q, items, selected, pending, med, medRaw, medVol, medDil, measured: measuredS, qubit, vars };
 }
 function quantPick(Q) {
   const by = {}; Q.items.forEach(i => by[i.dest || wellIdxName(i.destWell)] = i);
@@ -1496,16 +1525,22 @@ function renderQuant(step) {
   h += `<section class="panel"><div class="panel-h"><h3>Diluição para ${fmtN(q.mass)} ng em ${fmtN(q.finalVol)} <span class="u">µL</span></h3><span class="hint">amplicon <span class="u">µL</span> = ${fmtN(q.mass)} ng ÷ concentração; ${esc(q.diluente)} completa ${fmtN(q.finalVol)} <span class="u">µL</span></span></div>
     <div class="ctrls">${numField('q-mass', 'massa', 'Massa de amplicon (ng)', q.mass, 1)}${numField('q-vf', 'volFinal', 'Volume final (<span class="u">µL</span>)', q.finalVol, 1)}</div>
     <div class="kpis"><div class="kpi"><span class="label">Mediana dos medidos</span><span class="num">${Q.med != null ? fmtN(roundTo(Q.med, 2)) : '—'} <span class="u">ng/µL</span></span></div>
-      <div class="kpi"><span class="label">Volume pela mediana</span><span class="num">${Q.med != null ? fmtN(roundTo(Math.min(q.finalVol, q.mass / Q.med), q.dec)) : '—'} <span class="u">µL</span></span></div>
-      <div class="kpi"><span class="label">Volumes individuais</span><span class="num">${Q.items.filter(i => i.base === 'medido').length}</span></div>
+      <div class="kpi"><span class="label">Volume pela mediana</span><span class="num">${Q.medVol != null ? fmtN(Q.medVol) : '—'} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Volume calculado em uso</span><span class="num">${Q.items.filter(i => i.used).length}/${Q.items.filter(i => i.calc).length}</span></div>
       <div class="kpi"><span class="label">Pela mediana</span><span class="num">${Q.items.filter(i => i.base === 'mediana').length}</span></div></div>
     ${Q.pending ? `<div class="banner warn"><span>${Q.pending} amplicon(s) selecionado(s) ainda sem leitura.${Q.med != null ? ' Enquanto isso, usam a mediana.' : ''}</span></div>` : ''}
     ${warns.length ? `<div class="banner warn"><span>${warns.length} poço(s) precisam de atenção: ${warns.map(i => i.destWell).join(', ')}.</span></div>` : ''}
     ${meas.length ? `<div class="charts"><figure><figcaption>Concentração dos amplicons medidos</figcaption>${histogramSvg(meas.filter(i => i.kind === 'sample').map(i => i.qubit), Q.med)}</figure><figure><figcaption>DNA inicial × amplicon</figcaption>${scatterSvg(Q.items, q, Q.med)}</figure></div>` : ''}
+    ${Q.medVol != null ? `<div class="recipe medbox"><div class="recipe-h"><b>Se usar a mediana</b><span class="hint">mediana de ${Q.measured.length} amplicon(s) medido(s): ${fmtN(roundTo(Q.med, 2))} <span class="u">ng/µL</span></span></div>
+      <div class="medvals"><span><span class="label">Amplicon</span><b class="num">${fmtN(Q.medVol)} <span class="u">µL</span></b></span><span class="plus">+</span><span><span class="label">${esc(q.diluente)}</span><b class="num">${fmtN(Q.medDil)} <span class="u">µL</span></b></span><span class="plus">=</span><span><span class="label">Volume final</span><b class="num">${fmtN(q.finalVol)} <span class="u">µL</span></b></span></div>
+      <p class="hint">${Q.medRaw < q.minVol ? `Pela mediana seriam ${fmtN(roundTo(Q.medRaw, 2))} <span class="u">µL</span>; arredondado para ${fmtN(q.minVol)} <span class="u">µL</span>, o volume mínimo de pipetagem (massa ≈ ${fmtN(roundTo(Q.medVol * Q.med, 1))} ng). ` : ''}Vale para os poços não quantificados e para os quantificados em que a caixa “Usei o calculado” ficar desmarcada.</p></div>` : ''}
+    ${Q.items.some(i => i.calc) ? `<div class="row"><span class="hint">Amplicons quantificados: marque na tabela “Usei o calculado” quando pipetar o volume calculado para o poço. Desmarcado = usou a mediana.</span><span class="row" style="margin-left:auto"><button class="btn small" data-act="q-use-all" data-v="1">Marcar todos</button><button class="btn small" data-act="q-use-all" data-v="0">Desmarcar todos</button></span></div>` : ''}
     ${ready.length ? qPlate(Q) : ''}
-    <div class="tbl"><table><thead><tr><th>Poço</th><th>Amostra</th><th>Tipo</th><th class="r">DNA inicial <span class="u">ng/µL</span></th><th>Seleção</th><th class="r">Amplicon <span class="u">ng/µL</span></th><th>Base</th><th class="r">Amplicon <span class="u">µL</span></th><th class="r">${esc(q.diluente)} <span class="u">µL</span></th><th class="r">Massa ng</th><th>Status</th></tr></thead><tbody>
+    <div class="tbl"><table><thead><tr><th>Poço</th><th>Amostra</th><th>Tipo</th><th class="r">DNA inicial <span class="u">ng/µL</span></th><th>Seleção</th><th class="r">Amplicon <span class="u">ng/µL</span></th><th class="r">Calculado <span class="u">µL</span></th><th>Usei o calculado</th><th>Base</th><th class="r">Amplicon <span class="u">µL</span></th><th class="r">${esc(q.diluente)} <span class="u">µL</span></th><th class="r">Massa ng</th><th>Status</th></tr></thead><tbody>
     ${Q.items.map(i => `<tr class="${i.kind !== 'sample' ? 'ctl' : ''}"><td><span class="well-tag">${i.destWell}</span></td><td class="mono">${esc(i.code)}</td><td>${chip(KIND[i.kind] || KIND.sample)}</td><td class="r num">${i.stockConc != null ? fmt(i.stockConc) : '—'}</td><td>${i.sel ? chip(Q_REASON[i.why] || Q_REASON.manual) : '<span class="muted">—</span>'}</td>
-      <td class="r num">${i.qubit != null ? fmt(i.qubit, 2) : (i.base === 'mediana' ? `<span class="muted">${fmt(i.conc, 2)}</span>` : '—')}</td><td>${i.base === 'medido' ? 'medido' : i.base === 'mediana' ? '<span class="muted">mediana</span>' : '—'}</td>
+      <td class="r num">${i.qubit != null ? fmt(i.qubit, 2) : (i.base === 'mediana' ? `<span class="muted">${fmt(i.conc, 2)}</span>` : '—')}</td><td class="r num">${i.calc ? fmtN(i.calc.vAmp) + (i.calc.predil ? ` <small>(1:${i.calc.predil})</small>` : '') : '—'}</td>
+      <td>${i.calc ? `<label class="check"><input type="checkbox" id="quse-${esc(slug(i.key))}" data-act="q-use" data-k="${esc(i.key)}" ${i.used ? 'checked' : ''} aria-label="Usei o volume calculado para ${esc(i.code)}">sim</label>` : '<span class="muted">—</span>'}</td>
+      <td>${i.base === 'medido' ? 'calculado' : i.base === 'mediana' ? '<span class="muted">mediana</span>' : '—'}</td>
       <td class="r num"><b>${i.vAmp != null ? fmtN(i.vAmp) + (i.predil ? ` <small>(1:${i.predil})</small>` : '') : '—'}</b></td><td class="r num">${i.vDil != null ? fmtN(i.vDil) : '—'}</td><td class="r num">${i.mass != null ? fmtN(roundTo(i.mass, 1)) : '—'}</td><td>${chip(i.status)}</td></tr>`).join('')}
     </tbody></table></div></section>`;
   return h;
@@ -1516,7 +1551,80 @@ function qPlate(Q) {
   for (let r = 0; r < 8; r++) { h += `<span class="hd">${'ABCDEFGH'[r]}</span>`;
     for (let c = 0; c < 12; c++) { const w = by[c * 8 + r + 1];
       h += w ? `<div class="well fill qw ${w.base === 'medido' ? 'meas' : 'medn'} ${w.status[0] === 'warn' ? 'qwarn' : ''}" title="${esc(w.destWell + ' · ' + w.code + ' · ' + w.status[1])}"><span class="lc">${esc(w.code.split('_')[0].slice(-4))}</span><span class="qv">${w.vAmp != null ? fmtN(w.vAmp) : '—'}</span><span class="qd">${w.vDil != null ? fmtN(w.vDil) : ''}</span></div>` : '<div class="well"></div>'; } }
-  return h + `</div></div><div class="legend"><span><i style="border-color:var(--post)"></i>Volume pela leitura do poço</span><span><i style="border-color:var(--line);border-style:dashed"></i>Volume pela mediana</span><span><i style="border-color:var(--warn);border-width:2px"></i>Atenção</span></div></div>`;
+  return h + `</div></div><div class="legend"><span><i style="border-color:var(--post)"></i>Volume calculado (leitura do poço)</span><span><i style="border-color:var(--line);border-style:dashed"></i>Volume pela mediana</span><span><i style="border-color:var(--warn);border-width:2px"></i>Atenção</span></div></div>`;
+}
+/* ---------- pós-PCR: mix de ligação + barcodes (placa de barcode + poço por amplicon) ---------- */
+const BC_KEY = 'bancadaNGS.barcodesUsados.v1';
+const bcNorm = w => { const m = String(w || '').trim().toUpperCase().match(/^([A-H])\s*0?([1-9]|1[0-2])$/); return m ? m[1] + m[2] : null; };
+const bcId = (p, w) => p + '-' + w;
+function bcCfg(step) { const b = step.config.barcode || {}; return { name: b.nome || 'Barcode', vol: +b.volumePorAmostra || 0, plates: (b.placas || ['01', '02', '03', '04']).map(String) }; }
+function bcOther(p, w) { const e = (store.get(BC_KEY) || {})[bcId(p, w)]; return e && e.runId !== run.id ? e : null; }
+function syncBc(step) {
+  const c = store.get(BC_KEY) || {}, B = bcState(step);
+  Object.keys(c).forEach(k => { if (c[k].runId === run.id) delete c[k]; });
+  B.items.forEach(i => { if (i.ok && !i.dup) c[bcId(i.plate, i.well)] = { runId: run.id, name: run.meta.name || 'rodada sem nome', date: run.meta.date, code: i.code }; });
+  store.set(BC_KEY, c);
+}
+function bcState(step) {
+  const s = st(step.id), cfg = bcCfg(step), map = s.bc || {};
+  const rows = plateItems(step).slice().sort((a, b) => a.dest - b.dest);
+  const items = rows.map(r => { const key = rk(r), a = map[key] || {}, well = bcNorm(a.well), plate = a.plate || '';
+    return { ...r, key, plate, wellRaw: a.well || '', well, ok: !!(plate && well), edited: !!a.edited, other: plate && well ? bcOther(plate, well) : null }; });
+  const count = {}; items.forEach(i => { if (i.ok) count[bcId(i.plate, i.well)] = (count[bcId(i.plate, i.well)] || 0) + 1; });
+  items.forEach(i => { i.dup = i.ok && count[bcId(i.plate, i.well)] > 1; });
+  const issues = [], dups = items.filter(i => i.dup), empty = items.filter(i => !i.ok), other = items.filter(i => i.ok && i.other);
+  if (dups.length) issues.push(['bad', `Barcode repetido em ${dups.length} poço(s): ${[...new Set(dups.map(i => bcId(i.plate, i.well)))].join(', ')}. Cada placa + poço de barcode só pode ir para um amplicon.`]);
+  if (empty.length) issues.push([items.length === empty.length ? 'warn' : 'bad', `${empty.length} poço(s) sem barcode${empty.some(i => i.wellRaw) ? ' ou com poço inválido' : ''}.`]);
+  if (other.length) issues.push(['warn', `${other.length} barcode(s) já usado(s) em outra rodada neste navegador (${[...new Set(other.map(i => i.other.name))].join(', ')}). Confira se ainda há volume nesses poços.`]);
+  const plates = [...new Set(items.filter(i => i.ok).map(i => i.plate))].sort();
+  return { cfg, items, issues, plates, dups, empty, start: s.bcStart || { plate: cfg.plates[0], well: 'A1', skip: true } };
+}
+function bcAutofill(step, plate, well, skip) {
+  const s = st(step.id), cfg = bcCfg(step), B = bcState(step);
+  let pi = Math.max(0, cfg.plates.indexOf(plate)), wi = wellIdxName(bcNorm(well) || 'A1'), n = 0;
+  s.bc = {};
+  for (const it of B.items) {
+    while (pi < cfg.plates.length && skip && bcOther(cfg.plates[pi], wellName(wi))) { if (++wi > 96) { wi = 1; pi++; } }
+    if (pi >= cfg.plates.length) break;
+    s.bc[it.key] = { plate: cfg.plates[pi], well: wellName(wi) }; n++;
+    if (++wi > 96) { wi = 1; pi++; }
+  }
+  return { n, total: B.items.length };
+}
+function bcMini(B, plate) {
+  const by = {}; B.items.filter(i => i.ok && i.plate === plate).forEach(i => (by[wellIdxName(i.well)] ||= []).push(i));
+  let h = `<div class="bcplate"><div class="bcplate-h"><b>Placa ${esc(plate)}</b><span class="hint">${Object.keys(by).length} poço(s)</span></div><div class="mp"><span></span>${Array.from({ length: 12 }, (_, c) => `<span class="mh">${c + 1}</span>`).join('')}`;
+  for (let r = 0; r < 8; r++) { h += `<span class="mh">${'ABCDEFGH'[r]}</span>`;
+    for (let c = 0; c < 12; c++) { const idx = c * 8 + r + 1, list = by[idx], w = wellName(idx), o = bcOther(plate, w);
+      h += `<span class="d ${list ? 'on' : ''} ${list && list.length > 1 ? 'dupw' : ''} ${!list && o ? 'usedw' : ''}" style="--pc:var(--post)" title="${esc(plate + ' · ' + w + (list ? ' → ' + list.map(i => i.destWell + ' ' + i.code).join(', ') : o ? ' · usado em ' + o.name : ''))}"></span>`; } }
+  return h + '</div></div>';
+}
+function renderBarcode(step) {
+  const B = bcState(step), cfg = B.cfg, S = B.start, bad = B.issues.some(i => i[0] === 'bad');
+  const shown = [...new Set([...B.plates, S.plate])].filter(Boolean).sort();
+  let h = renderMix(step);
+  h += `<section class="panel"><div class="panel-h"><h3>Barcodes por amplicon</h3><span class="hint">${esc(cfg.name)} · ${fmtN(cfg.vol)} <span class="u">µL</span> por poço · placas ${cfg.plates.map(esc).join(', ')}</span></div>
+    <p class="hint">Informe a placa e o primeiro poço de barcode usados: o app associa os amplicons em sequência (por coluna: A1, B1 … H1, A2 …), passando para a próxima placa depois do H12. Depois, ajuste na tabela se precisar.</p>
+    <div class="ctrls bcctl"><label class="field"><span class="label">Placa de barcode inicial</span><select id="bc-plate">${cfg.plates.map(p => `<option ${p === S.plate ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
+      <label class="field"><span class="label">Primeiro poço</span><input id="bc-well" class="num" value="${esc(S.well)}" maxlength="3" size="4" autocomplete="off"></label>
+      <label class="check"><input type="checkbox" id="bc-skip" ${S.skip !== false ? 'checked' : ''}>Pular barcodes já usados em outras rodadas</label>
+      <span class="row"><button class="btn primary" data-act="bc-fill">Autopreencher</button><button class="btn" data-act="bc-clear">Limpar</button></span></div>
+    <div class="kpis"><div class="kpi"><span class="label">Amplicons</span><span class="num">${B.items.length}</span></div>
+      <div class="kpi"><span class="label">Com barcode</span><span class="num">${B.items.filter(i => i.ok).length}</span></div>
+      <div class="kpi"><span class="label">Placas de barcode</span><span class="num">${B.plates.length ? B.plates.join(', ') : '—'}</span></div>
+      <div class="kpi"><span class="label">Repetidos</span><span class="num">${B.dups.length}</span></div></div>
+    ${B.issues.length ? `<div class="banner ${bad ? 'bad' : 'warn'}"><ul class="issues">${B.issues.map(i => `<li>${chip([i[0], i[0] === 'bad' ? 'Resolver' : 'Conferir'])}<span>${esc(i[1])}</span></li>`).join('')}</ul></div>` : '<div class="banner ok"><span>Todos os amplicons têm barcode, sem repetição.</span></div>'}
+    <div class="bcplates">${shown.map(p => bcMini(B, p)).join('')}</div>
+    <div class="legend"><span><i style="background:var(--post);border-color:var(--post)"></i>Usado nesta rodada</span><span><i style="border-color:var(--warn);border-style:dashed"></i>Usado em outra rodada</span><span><i class="dupw"></i>Repetido</span></div>
+    <div class="tbl"><table><thead><tr><th>Poço</th><th>Amplicon</th><th>Tipo</th><th>Placa barcode</th><th>Poço barcode</th><th>Barcode</th><th></th></tr></thead><tbody>
+    ${B.items.map(i => `<tr class="${i.kind !== 'sample' ? 'ctl' : ''} ${i.dup ? 'dup' : ''}"><td><span class="well-tag">${i.destWell}</span></td><td class="mono">${esc(i.code)}</td><td>${chip(KIND[i.kind] || KIND.sample)}</td>
+      <td><select class="cell" id="bcp-${esc(slug(i.key))}" data-bcp="${esc(i.key)}" aria-label="Placa de barcode de ${esc(i.code)}"><option value="">—</option>${cfg.plates.map(p => `<option ${p === i.plate ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></td>
+      <td><input class="cell num" style="width:62px" id="bcw-${esc(slug(i.key))}" data-bcw="${esc(i.key)}" value="${esc(i.well || i.wellRaw)}" maxlength="3" aria-label="Poço de barcode de ${esc(i.code)}"></td>
+      <td class="mono"><b>${i.ok ? bcId(i.plate, i.well) : '—'}</b></td>
+      <td>${i.dup ? chip(['bad', 'Repetido']) : !i.ok ? (i.wellRaw ? chip(['bad', 'Poço inválido']) : chip(['warn', 'Sem barcode'])) : i.other ? chip(['warn', 'Usado em ' + i.other.name]) : i.edited ? chip(['info', 'Editado']) : chip(['ok', 'OK'])}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="hint">A associação amplicon → barcode segue para as próximas etapas e para o CSV. O registro de barcodes já usados fica neste navegador.</p></section>`;
+  return h;
 }
 /* cronômetro dos passos do checklist (incubações, esperas) */
 const TIMERS = {};
@@ -1605,6 +1713,7 @@ function renderTypeBody(step) {
   if (step.type === 'plate') return renderPlate(step);
   if (step.type === 'cleanup') return renderCleanup(step);
   if (step.type === 'quant') return renderQuant(step);
+  if (step.type === 'barcode') return renderBarcode(step);
   return '';
 }
 const NORM_KEYS = ['mode', 'target', 'finalVol', 'minVolAuto', 'dilDeadVol', 'prepVol', 'minVolBench', 'maxVol', 'allowBelow', 'autoAdjust', 'manualAtEnd'];
@@ -1768,6 +1877,8 @@ function renderBench(step, N) {
     <p class="hint">DNA <span class="u">µL</span> = alvo × volume preparado ÷ concentração. DNA e água nunca ficam abaixo do volume mínimo de pipetagem: o app aumenta o volume preparado até o máximo do tubo e, se não couber, indica a menor pré-diluição que resolve.</p></section>`;
 }
 function stepReagents(step) {
+  if (step.type === 'barcode') return [...step.config.mixes.flatMap(x => x.components.map(k => ({ key: x.name + '::' + k.name, name: k.name, mix: x.name }))),
+    ...bcState(step).plates.map(p => ({ key: 'bc:' + p, name: `${bcCfg(step).name} placa ${p}`, mix: 'barcodes' }))];
   if (step.type === 'mastermix') return step.config.mixes.flatMap(x => x.components.map(k => ({ key: x.name + '::' + k.name, name: k.name, mix: x.name })));
   if (step.type === 'cleanup') return cleanupState(step).reagents.map(r => ({ key: r.key, name: r.name, mix: step.config.nome || step.name }));
   if (step.type === 'quant') { const q = quantCfg(step); return [{ key: 'kit', name: q.reagentes.kit, mix: q.metodo }, { key: 'diluente', name: q.diluente, mix: 'diluição' }]; }
@@ -1803,13 +1914,13 @@ function renderMix(step) {
     <div class="kpi"><span class="label">${c.post ? 'Volume final' : 'Reação'}</span><span class="num">${fmt(c.rxnVol)} <span class="u">µL</span></span></div></div>
   <div class="ctrls">${numField('mm-over', 'overage', 'Excedente (%)', m.overage, 0)}</div>
   ${lotBanner(step)}
-  <div class="mixes">${m.mixes.map(x => { const diff = x.perRx + c.templateVol - c.rxnVol;
+  <div class="mixes">${m.mixes.map(x => { const diff = x.perRx + c.templateVol + (c.extraVol || 0) - c.rxnVol;
     return `<div class="mix"><div class="mix-h"><b>${esc(x.name)}</b><span class="hint">dispensar <span class="num">${fmt(x.perRx)} <span class="u">µL</span></span>/poço</span></div>
     <div class="tbl"><table><thead><tr><th>Componente</th><th class="r"><span class="u">µL</span>/rx</th><th class="r">Total <span class="u">µL</span></th><th>Lote · validade</th></tr></thead><tbody>
     ${x.components.map(k => `<tr><td>${esc(k.name)}</td><td class="r num">${fmt(k.vol)}</td><td class="r num"><b>${fmt(k.total)}</b></td><td>${lotCell(step, x.name + '::' + k.name, k.name)}</td></tr>`).join('')}
     </tbody><tfoot><tr><td>Total do mix</td><td class="r num">${fmt(x.perRx)}</td><td class="r num">${fmt(x.total)}</td><td></td></tr></tfoot></table></div>
     ${Math.abs(diff) > 0.001 ? `<div class="banner bad" style="border-radius:0">Mix + DNA (${fmt(c.templateVol)} <span class="u">µL</span>) = ${fmt(x.perRx + c.templateVol)} <span class="u">µL</span>, diferente da reação de ${fmt(c.rxnVol)} <span class="u">µL</span>.</div>` : ''}</div>`; }).join('')}</div>
-  <p class="hint">${c.post ? `Amplicon normalizado: <span class="num">${fmt(c.templateVol)} <span class="u">µL</span></span> por poço (etapa de quantificação). Volume final por poço: <span class="num">${fmt(c.rxnVol)} <span class="u">µL</span></span>.` : `DNA normalizado: <span class="num">${fmt(c.templateVol)} <span class="u">µL</span></span> por poço, já dispensado na normalização.`}</p>`;
+  <p class="hint">${c.templateHint ? c.templateHint : c.post ? `Amplicon normalizado: <span class="num">${fmt(c.templateVol)} <span class="u">µL</span></span> por poço (etapa de quantificação). Volume final por poço: <span class="num">${fmt(c.rxnVol)} <span class="u">µL</span></span>.` : `DNA normalizado: <span class="num">${fmt(c.templateVol)} <span class="u">µL</span></span> por poço, já dispensado na normalização.`}</p>`;
   if ((c.program || []).length) h += `<div><span class="label">Programa do termociclador</span><div class="tbl" style="margin-top:6px"><table><thead><tr><th>Etapa</th><th class="r">Temperatura</th><th class="r">Tempo</th><th class="r">Ciclos</th></tr></thead><tbody>
     ${c.program.map(r => `<tr><td>${esc(r.stage)}</td><td class="r num">${esc(r.temp)}</td><td class="r num">${esc(r.time)}</td><td class="r num">${esc(r.cycles)}</td></tr>`).join('')}</tbody></table></div></div>`;
   return h + '</section>';
@@ -1865,7 +1976,8 @@ function csvFor(step) {
     case 'normalize': return toCSV(out, [['Poco','destWell'], ...base, ['Estoque', r => r.source === 'stock' ? plateKey(r) + ' ' + r.row + r.col : SOURCE[r.source]], ['ng/uL','conc'], ['DNA (uL)','vDNA'], ['Diluente (uL)','vDil'], ['Preparado (uL)','vPrep'], ['Status', r => r.status[1]]]);
     case 'mastermix': { const m = mmState(step), rows = []; m.mixes.forEach(x => x.components.forEach(k => rows.push({ mix: x.name, comp: k.name, vol: k.vol, total: k.total }))); return toCSV(rows, [['Master mix','mix'],['Componente','comp'],['uL/reacao','vol'],[`Total (${m.nRx} rx +${m.overage}%)`,'total']]); }
     case 'plate': return toCSV(plateItems(step), [['Poco','destWell'], ...base]);
-    case 'quant': return toCSV(quantState(step).items, [['Poco','destWell'], ...base, ['DNA inicial ng/uL','stockConc'], ['Quantificado', r => r.sel ? 'sim' : 'nao'], ['Amplicon ng/uL','qubit'], ['Base','base'], ['Amplicon (uL)','vAmp'], ['Pre-diluicao', r => r.predil ? '1:' + r.predil : ''], ['Diluente (uL)','vDil'], ['Massa (ng)', r => r.mass != null ? roundTo(r.mass, 1) : ''], ['Status', r => r.status[1]]]);
+    case 'barcode': return toCSV(bcState(step).items, [['Poco','destWell'], ...base, ['Placa barcode', r => r.ok ? r.plate : ''], ['Poco barcode', r => r.ok ? r.well : ''], ['Barcode', r => r.ok ? bcId(r.plate, r.well) : '']]);
+    case 'quant': return toCSV(quantState(step).items, [['Poco','destWell'], ...base, ['DNA inicial ng/uL','stockConc'], ['Quantificado', r => r.sel ? 'sim' : 'nao'], ['Amplicon ng/uL','qubit'], ['Calculado (uL)', r => r.calc ? r.calc.vAmp : ''], ['Usou calculado', r => r.calc ? (r.used ? 'sim' : 'nao') : ''], ['Base', r => r.base === 'medido' ? 'calculado' : r.base], ['Amplicon (uL)','vAmp'], ['Pre-diluicao', r => r.predil ? '1:' + r.predil : ''], ['Diluente (uL)','vDil'], ['Massa (ng)', r => r.mass != null ? roundTo(r.mass, 1) : ''], ['Status', r => r.status[1]]]);
     default: return toCSV(out, [['Amostra','id']]);
   }
 }
@@ -2032,6 +2144,13 @@ document.addEventListener('click', async e => {
       P.all.filter(w => w.key === k).forEach(w => { s.excl[k + '|' + w.well] = m === 'none' || (m === 'pending' && !!w.claim); }); refreshPkgRows(step); render(); break; }
     case 'layout': s.layout = el.dataset.l; refreshPkgRows(step); render(); break;
     case 'q-well': { quantState(step); const k = el.dataset.k; s.qsel[k] = !s.qsel[k]; if (s.qsel[k]) (s.qwhy ||= {})[k] ||= 'manual'; render(); break; }
+    case 'bc-fill': { const plate = $('#bc-plate').value, w = bcNorm($('#bc-well').value), skip = $('#bc-skip').checked;
+      if (!w) { toast('Poço inicial inválido: use A1 a H12'); break; }
+      s.bcStart = { plate, well: w, skip }; const r = bcAutofill(step, plate, w, skip); render();
+      toast(r.n < r.total ? `${r.n} de ${r.total} amplicons receberam barcode: acabaram as placas` : `${r.n} barcodes associados`); break; }
+    case 'bc-clear': s.bc = {}; render(); break;
+    case 'q-use': { const k = el.dataset.k; (s.quse ||= {})[k] = el.checked; render(); break; }
+    case 'q-use-all': { const Q = quantState(step); s.quse ||= {}; Q.items.filter(i => i.calc).forEach(i => s.quse[i.key] = el.dataset.v === '1'); render(); break; }
     case 'q-sel': { const m = el.dataset.m, rows = s.rows;
       if (m === 'suggest') { const g = quantSuggest(rows, quantCfg(step)); s.qsel = g.sel; s.qwhy = g.why; }
       else { s.qsel = {}; s.qwhy ||= {}; rows.forEach(r => { const k = rk(r), on = m === 'all' || (m === 'ctl' && r.kind !== 'sample'); if (on) { s.qsel[k] = true; s.qwhy[k] = r.kind !== 'sample' ? 'controle' : (s.qwhy[k] && s.qwhy[k] !== 'controle' ? s.qwhy[k] : 'manual'); } }); }
@@ -2122,6 +2241,10 @@ document.addEventListener('change', async e => {
   if (el.id === 'f-reg-import' && el.files?.length) { try { const o = JSON.parse(await el.files[0].text()), f = regFromFiles(o, o, o); editReg();
       if (o.tecnicos) reg.techs = f.techs; if (o.reagentes) reg.reagents = f.reagents; if (o.termocicladores) reg.cyclers = f.cyclers;
       if (!o.tecnicos && !o.reagentes && !o.termocicladores) throw 0; saveReg(); regDialog(regTab); render(); toast('Arquivo importado'); } catch (e) { toast('Arquivo inválido: use tecnicos.json, reagentes.json ou termocicladores.json'); } el.value = ''; return; }
+  if (el.dataset.bcp != null || el.dataset.bcw != null) { const k = el.dataset.bcp ?? el.dataset.bcw, a = ((s.bc ||= {})[k] ||= {});
+    if (el.dataset.bcp != null) a.plate = el.value; else { const w = bcNorm(el.value); a.well = w || el.value.trim().toUpperCase(); if (!w && el.value.trim()) toast('Poço inválido: use A1 a H12'); }
+    a.edited = true; save(); setTimeout(() => { const id = document.activeElement?.id; render(); if (id) document.getElementById(id)?.focus(); }, 0); return; }
+  if (el.id === 'bc-plate' || el.id === 'bc-skip') { s.bcStart = { ...(s.bcStart || {}), plate: $('#bc-plate').value, well: bcNorm($('#bc-well').value) || 'A1', skip: $('#bc-skip').checked }; save(); return; }
   if (el.dataset.qv != null) { const v = el.value.trim() === '' ? null : numBR(el.value); if (el.value.trim() !== '' && (v == null || v < 0)) { toast('Valor inválido'); return; }
     (s.qv ||= {})[el.dataset.qv] = v; save(); setTimeout(() => { const id = document.activeElement?.id; render(); if (id) document.getElementById(id)?.focus(); }, 0); return; }
   if (el.dataset.ov) { const v = numBR(el.value); if (v == null || v < 0) { toast('Valor inválido'); render(); return; } s.overrides[el.dataset.ov] = v; render(); return; }
@@ -2149,8 +2272,10 @@ document.addEventListener('change', async e => {
   }
 });
 document.addEventListener('keydown', e => {   // Enter nas leituras do Qubit: vai para o próximo poço
-  const el = e.target; if (e.key !== 'Enter' || el.dataset?.qv == null) return; e.preventDefault();
-  const all = [...document.querySelectorAll('[data-qv]')], nx = all[all.indexOf(el) + 1]; if (nx) nx.focus(); else el.blur();
+  const el = e.target; if (e.key !== 'Enter') return;
+  if (el.id === 'bc-well') { e.preventDefault(); document.querySelector('[data-act="bc-fill"]')?.click(); return; }
+  const attr = el.dataset?.qv != null ? 'data-qv' : el.dataset?.bcw != null ? 'data-bcw' : null; if (!attr) return; e.preventDefault();
+  const all = [...document.querySelectorAll('[' + attr + ']')], nx = all[all.indexOf(el) + 1]; if (nx) nx.focus(); else el.blur();
 });
 document.addEventListener('input', e => {
   const el = e.target; if (!el.matches?.('[data-datebr]')) return;
