@@ -1456,8 +1456,8 @@ function quantState(step) {
   const sel = s.qsel || {}, why = s.qwhy || {}, qv = s.qv || {};
   const measuredS = rows.filter(r => r.kind === 'sample' && sel[rk(r)] && qv[rk(r)] > 0).map(r => qv[rk(r)]);
   const med = median(measuredS);
-  // volume pela mediana: arredondado para o mínimo de pipetagem quando ficaria abaixo dele
-  const medRaw = med != null ? q.mass / med : null;
+  // mediana dos volumes calculados originais (sem arredondar para o mínimo); só o resultado é arredondado para o mínimo de pipetagem
+  const medRaw = median(measuredS.map(c => q.mass / c)), medConc = medRaw ? q.mass / medRaw : null;
   const medVol = medRaw == null ? null : medRaw > q.finalVol ? q.finalVol : Math.max(q.minVol, roundTo(medRaw, q.dec)), medDil = medVol == null ? null : roundTo(q.finalVol - medVol, q.dec);
   const use = s.quse || {};
   const items = rows.map(r => {
@@ -1466,14 +1466,13 @@ function quantState(step) {
     if (val > 0 && r.kind !== 'cn') {   // volume calculado pela leitura do próprio poço
       const v = q.mass / val, c = { conc: val, predil: 0 };
       if (v > q.finalVol) Object.assign(c, { vAmp: q.finalVol, vDil: 0, mass: q.finalVol * val, status: ['warn', `Abaixo de ${fmtN(q.mass)} ng: ${fmtN(roundTo(q.finalVol * val, 1))} ng (amplicon puro)`] });
-      else if (v < q.minVol) { const f = [2, 5, 10, 20, 50, 100].find(x => v * x >= q.minVol) || 100, va = roundTo(v * f, q.dec);
-        Object.assign(c, { predil: f, vAmp: va, vDil: roundTo(q.finalVol - va, q.dec), mass: va * val / f, status: ['warn', `Pré-diluir 1:${f} (${fmtN(q.minVol)} µL + ${fmtN(q.minVol * (f - 1))} µL de diluente)`] }); }
+      else if (v < q.minVol) Object.assign(c, { raw: v, vAmp: q.minVol, vDil: roundTo(q.finalVol - q.minVol, q.dec), mass: q.minVol * val, status: ['warn', `Arredondado para ${fmtN(q.minVol)} µL (calculado ${fmtN(roundTo(v, 2))} µL): ${fmtN(roundTo(q.minVol * val, 1))} ng`] });
       else { const va = roundTo(v, q.dec); Object.assign(c, { vAmp: va, vDil: roundTo(q.finalVol - va, q.dec), mass: va * val, status: ['ok', 'Volume calculado'] }); }
       o.calc = c;
     }
     if (o.calc && use[key]) { Object.assign(o, { used: true, base: 'medido', conc: o.calc.conc, vAmp: o.calc.vAmp, vDil: o.calc.vDil, mass: o.calc.mass, predil: o.calc.predil, status: o.calc.status }); return o; }
     if (medVol == null) return o;
-    Object.assign(o, { base: 'mediana', conc: med, vAmp: medVol, vDil: medDil, mass: medVol * med,
+    Object.assign(o, { base: 'mediana', conc: medConc, vAmp: medVol, vDil: medDil, mass: medVol * medConc,
       status: ['info', r.kind === 'cn' ? 'CN: volume da mediana' : o.calc ? 'Quantificado; usou a mediana' : 'Pela mediana'] });
     return o;
   });
@@ -1482,7 +1481,7 @@ function quantState(step) {
   const qubit = { nTubes, ws, reagent: ws / (+Q.diluicaoReagente || 200), buffer: ws - ws / (+Q.diluicaoReagente || 200), sampleWs: (+Q.volumeTrabalho || 200) - q.input, stdWs: (+Q.volumeTrabalho || 200) - (+Q.volumePadrao || 10) };
   const vars = { input: q.input, massa: q.mass, volumeFinal: q.finalVol, diluente: q.diluente, nQuant: selected.length, metodo: q.metodo, reagenteQubit: q.reagentes.kit,
     trabalhoTotal: mlTxt(qubit.ws), trabalhoReagente: mlTxt(qubit.reagent), trabalhoTampao: mlTxt(qubit.buffer), tubosQubit: nTubes, volTrabalhoAmostra: qubit.sampleWs, volTrabalhoPadrao: qubit.stdWs, volPadrao: +Q.volumePadrao || 10, padroes: +Q.padroes || 2, ...q.tempos };
-  return { q, items, selected, pending, med, medRaw, medVol, medDil, measured: measuredS, qubit, vars };
+  return { q, items, selected, pending, med, medRaw, medConc, medVol, medDil, measured: measuredS, qubit, vars };
 }
 function quantPick(Q) {
   const by = {}; Q.items.forEach(i => by[i.dest || wellIdxName(i.destWell)] = i);
@@ -1551,21 +1550,21 @@ function renderQuant(step) {
   const ready = Q.items.filter(i => i.vAmp != null), warns = Q.items.filter(i => i.status[0] === 'warn');
   h += `<section class="panel"><div class="panel-h"><h3>Diluição para ${fmtN(q.mass)} ng em ${fmtN(q.finalVol)} <span class="u">µL</span></h3><span class="hint">amplicon <span class="u">µL</span> = ${fmtN(q.mass)} ng ÷ concentração; ${esc(q.diluente)} completa ${fmtN(q.finalVol)} <span class="u">µL</span></span></div>
     <div class="ctrls">${numField('q-mass', 'massa', 'Massa de amplicon (ng)', q.mass, 1)}${numField('q-vf', 'volFinal', 'Volume final (<span class="u">µL</span>)', q.finalVol, 1)}</div>
-    <div class="kpis"><div class="kpi"><span class="label">Mediana dos medidos</span><span class="num">${Q.med != null ? fmtN(roundTo(Q.med, 2)) : '—'} <span class="u">ng/µL</span></span></div>
+    <div class="kpis"><div class="kpi"><span class="label">Mediana dos volumes calculados</span><span class="num">${Q.medRaw != null ? fmtN(roundTo(Q.medRaw, 2)) : '—'} <span class="u">µL</span></span></div>
       <div class="kpi"><span class="label">Volume pela mediana</span><span class="num">${Q.medVol != null ? fmtN(Q.medVol) : '—'} <span class="u">µL</span></span></div>
       <div class="kpi"><span class="label">Volume calculado em uso</span><span class="num">${Q.items.filter(i => i.used).length}/${Q.items.filter(i => i.calc).length}</span></div>
       <div class="kpi"><span class="label">Pela mediana</span><span class="num">${Q.items.filter(i => i.base === 'mediana').length}</span></div></div>
     ${Q.pending ? `<div class="banner warn"><span>${Q.pending} amplicon(s) selecionado(s) ainda sem leitura.${Q.med != null ? ' Enquanto isso, usam a mediana.' : ''}</span></div>` : ''}
     ${warns.length ? `<div class="banner warn"><span>${warns.length} poço(s) precisam de atenção: ${warns.map(i => i.destWell).join(', ')}.</span></div>` : ''}
     ${meas.length ? `<div class="charts"><figure><figcaption>Concentração dos amplicons medidos</figcaption>${histogramSvg(meas.filter(i => i.kind === 'sample').map(i => i.qubit), Q.med)}</figure><figure><figcaption>DNA inicial × amplicon</figcaption>${scatterSvg(Q.items, q, Q.med)}</figure></div>` : ''}
-    ${Q.medVol != null ? `<div class="recipe medbox"><div class="recipe-h"><b>Se usar a mediana</b><span class="hint">mediana de ${Q.measured.length} amplicon(s) medido(s): ${fmtN(roundTo(Q.med, 2))} <span class="u">ng/µL</span></span></div>
+    ${Q.medVol != null ? `<div class="recipe medbox"><div class="recipe-h"><b>Se usar a mediana</b><span class="hint">mediana dos volumes calculados (sem arredondar) de ${Q.measured.length} amplicon(s): ${fmtN(roundTo(Q.medRaw, 2))} <span class="u">µL</span></span></div>
       <div class="medvals"><span><span class="label">Amplicon</span><b class="num">${fmtN(Q.medVol)} <span class="u">µL</span></b></span><span class="plus">+</span><span><span class="label">${esc(q.diluente)}</span><b class="num">${fmtN(Q.medDil)} <span class="u">µL</span></b></span><span class="plus">=</span><span><span class="label">Volume final</span><b class="num">${fmtN(q.finalVol)} <span class="u">µL</span></b></span></div>
-      <p class="hint">${Q.medRaw < q.minVol ? `Pela mediana seriam ${fmtN(roundTo(Q.medRaw, 2))} <span class="u">µL</span>; arredondado para ${fmtN(q.minVol)} <span class="u">µL</span>, o volume mínimo de pipetagem (massa ≈ ${fmtN(roundTo(Q.medVol * Q.med, 1))} ng). ` : ''}Vale para os poços não quantificados e para os quantificados em que a caixa “Usei o calculado” ficar desmarcada.</p></div>` : ''}
+      <p class="hint">${Q.medRaw < q.minVol ? `Pela mediana seriam ${fmtN(roundTo(Q.medRaw, 2))} <span class="u">µL</span>; arredondado para ${fmtN(q.minVol)} <span class="u">µL</span>, o volume mínimo de pipetagem (massa ≈ ${fmtN(roundTo(Q.medVol * Q.medConc, 1))} ng). ` : ''}Vale para os poços não quantificados e para os quantificados em que a caixa “Usei o calculado” ficar desmarcada.</p></div>` : ''}
     ${Q.items.some(i => i.calc) ? `<div class="row"><span class="hint">Amplicons quantificados: marque na tabela “Usei o calculado” quando pipetar o volume calculado para o poço. Desmarcado = usou a mediana.</span><span class="row" style="margin-left:auto"><button class="btn small" data-act="q-use-all" data-v="1">Marcar todos</button><button class="btn small" data-act="q-use-all" data-v="0">Desmarcar todos</button></span></div>` : ''}
     ${ready.length ? qPlate(Q) : ''}
     <div class="tbl"><table><thead><tr><th>Poço</th><th>Amostra</th><th>Tipo</th><th class="r">DNA inicial <span class="u">ng/µL</span></th><th>Seleção</th><th class="r">Amplicon <span class="u">ng/µL</span></th><th class="r">Calculado <span class="u">µL</span></th><th>Usei o calculado</th><th>Base</th><th class="r">Amplicon <span class="u">µL</span></th><th class="r">${esc(q.diluente)} <span class="u">µL</span></th><th class="r">Massa ng</th><th>Status</th></tr></thead><tbody>
     ${Q.items.map(i => `<tr class="${i.kind !== 'sample' ? 'ctl' : ''}"><td><span class="well-tag">${i.destWell}</span></td><td class="mono">${esc(i.code)}</td><td>${chip(KIND[i.kind] || KIND.sample)}</td><td class="r num">${i.stockConc != null ? fmt(i.stockConc) : '—'}</td><td>${i.sel ? chip(Q_REASON[i.why] || Q_REASON.manual) : '<span class="muted">—</span>'}</td>
-      <td class="r num">${i.qubit != null ? fmt(i.qubit, 2) : (i.base === 'mediana' ? `<span class="muted">${fmt(i.conc, 2)}</span>` : '—')}</td><td class="r num">${i.calc ? fmtN(i.calc.vAmp) + (i.calc.predil ? ` <small>(1:${i.calc.predil})</small>` : '') : '—'}</td>
+      <td class="r num">${i.qubit != null ? fmt(i.qubit, 2) : (i.base === 'mediana' ? `<span class="muted">${fmt(i.conc, 2)}</span>` : '—')}</td><td class="r num">${i.calc ? fmtN(i.calc.vAmp) + (i.calc.raw != null ? ` <small>(calc. ${fmtN(roundTo(i.calc.raw, 2))})</small>` : '') : '—'}</td>
       <td>${i.calc ? `<label class="check"><input type="checkbox" id="quse-${esc(slug(i.key))}" data-act="q-use" data-k="${esc(i.key)}" ${i.used ? 'checked' : ''} aria-label="Usei o volume calculado para ${esc(i.code)}">sim</label>` : '<span class="muted">—</span>'}</td>
       <td>${i.base === 'medido' ? 'calculado' : i.base === 'mediana' ? '<span class="muted">mediana</span>' : '—'}</td>
       <td class="r num"><b>${i.vAmp != null ? fmtN(i.vAmp) + (i.predil ? ` <small>(1:${i.predil})</small>` : '') : '—'}</b></td><td class="r num">${i.vDil != null ? fmtN(i.vDil) : '—'}</td><td class="r num">${i.mass != null ? fmtN(roundTo(i.mass, 1)) : '—'}</td><td>${chip(i.status)}</td></tr>`).join('')}
@@ -2193,7 +2192,7 @@ function csvFor(step) {
     case 'plate': return toCSV(plateItems(step), [['Poco','destWell'], ...base]);
     case 'pool': return toCSV(poolState(step).P.rows, [['Poco','destWell'], ...base, ['Barcode', r => r.barcode || ''], ['Qubit HS ng/uL','qhs'], ['No pool', r => r.inPool ? 'sim' : 'nao'], ['Volume (uL)','vol'], ['Pre-diluicao', r => r.predil ? '1:' + r.predil : ''], ['Massa (ng)', r => r.mass != null ? roundTo(r.mass, 2) : ''], ['Massa relativa', r => r.repr != null ? roundTo(r.repr, 3) : ''], ['Status', r => r.status[1]]]);
     case 'barcode': return toCSV(bcState(step).items, [['Poco','destWell'], ...base, ['Placa barcode', r => r.ok ? r.plate : ''], ['Poco barcode', r => r.ok ? r.well : ''], ['Barcode', r => r.ok ? bcId(r.plate, r.well) : '']]);
-    case 'quant': return toCSV(quantState(step).items, [['Poco','destWell'], ...base, ['DNA inicial ng/uL','stockConc'], ['Quantificado', r => r.sel ? 'sim' : 'nao'], ['Amplicon ng/uL','qubit'], ['Calculado (uL)', r => r.calc ? r.calc.vAmp : ''], ['Usou calculado', r => r.calc ? (r.used ? 'sim' : 'nao') : ''], ['Base', r => r.base === 'medido' ? 'calculado' : r.base], ['Amplicon (uL)','vAmp'], ['Pre-diluicao', r => r.predil ? '1:' + r.predil : ''], ['Diluente (uL)','vDil'], ['Massa (ng)', r => r.mass != null ? roundTo(r.mass, 1) : ''], ['Status', r => r.status[1]]]);
+    case 'quant': return toCSV(quantState(step).items, [['Poco','destWell'], ...base, ['DNA inicial ng/uL','stockConc'], ['Quantificado', r => r.sel ? 'sim' : 'nao'], ['Amplicon ng/uL','qubit'], ['Calculado (uL)', r => r.calc ? r.calc.vAmp : ''], ['Calculado sem arredondar (uL)', r => r.calc ? roundTo(r.calc.raw ?? r.calc.vAmp, 3) : ''], ['Usou calculado', r => r.calc ? (r.used ? 'sim' : 'nao') : ''], ['Base', r => r.base === 'medido' ? 'calculado' : r.base], ['Amplicon (uL)','vAmp'], ['Pre-diluicao', r => r.predil ? '1:' + r.predil : ''], ['Diluente (uL)','vDil'], ['Massa (ng)', r => r.mass != null ? roundTo(r.mass, 1) : ''], ['Status', r => r.status[1]]]);
     default: return toCSV(out, [['Amostra','id']]);
   }
 }
