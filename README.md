@@ -6,7 +6,7 @@ Apps web para o preparo de bibliotecas NGS, divididos pela área do laboratório
 |---|---|
 | `index.html` | Portal com os módulos |
 | `pre-pcr.html` | Módulo pré-PCR: bateria de testes → normalização do DNA genômico → master mix → placa de PCR |
-| `pos-pcr.html` | Módulo pós-PCR: amplicons da PCR (um ou vários pacotes `_pre-pcr.json`, completos ou parciais) → purificação AMPure → quantificação Qubit e diluição → master mix de fragmentação → ligação dos barcodes |
+| `pos-pcr.html` | Módulo pós-PCR: amplicons da PCR (um ou vários pacotes `_pre-pcr.json`, completos ou parciais) → purificação AMPure → quantificação Qubit e diluição → fragmentação → ligação dos barcodes → seleção de tamanho → amplificação secundária → purificação 1:1 → Qubit HS e pool equimolar → purificação do pool → quantificação do pool final |
 
 ## Arquivos de dados (editáveis)
 
@@ -108,15 +108,19 @@ O seletor **Protocolo** lista os kits; o app monta o protocolo juntando o fluxo 
 - Em `posPcr.quantificacao`: o app sugere quantificar os controles + `fracaoAmostragem` das amostras; `fracaoFaixa` delas na faixa de DNA inicial `faixaMin`–`faixaMax` ng/µL e o restante nos extremos (mais baixa e mais alta). Volume de amplicon = `massaAlvo` ÷ concentração, completado com `diluente` até `volumeFinal`; poços sem leitura usam a mediana das leituras.
 - Na quantificação, o volume pela mediana nunca fica abaixo de `volumeMinimo` (1 µL). Nos amplicons quantificados, o técnico marca “Usei o calculado”; desmarcado, o poço usa o volume da mediana.
 - Em `posPcr.mixLigacao`, `reagentes` é o mix comum; o `barcode` é adicionado à parte, um por poço (placa de `placas` + poço A1–H12). O app autopreenche a partir do primeiro poço informado (por coluna, passando para a próxima placa depois do H12), não aceita a mesma placa + poço em dois amplicons e registra, neste navegador, os barcodes já usados em rodadas anteriores.
+- Blocos de purificação (`limpezaAmplicons`, `selecaoTamanho`, `limpezaBiblioteca`, `limpezaPool`): `volumeBeads` fixa o volume de beads (senão, `razaoBeads × volumeAmostra`); `selecao` (`volumeBeadsNegativa`, `volumeTransferencia1`, `volumeBeadsPositiva`, `volumeDescarte`) faz a seleção dupla; `tuboUnico: true` trata a purificação como um tubo só (pool).
+- Blocos de mix do pós-PCR (`mixFragmentacao`, `mixLigacao`, `mixAmplificacao`) aceitam `termociclagem` (mesmo formato do pré-PCR), mostrada na etapa.
+- `pool`: `volumeMaximo` (µL da biblioteca menos concentrada), `volumeMinimoPool` e `concMinimaPool` (o Low TE só completa o pool até onde a concentração continua ≥ esse valor), `referencia` padrão (`min`, `tukey`, `p10`, `q1`; o técnico pode trocar na tela ou digitar um valor manual). O controle negativo entra com `volumeControleNegativo` (padrão: `volumeMaximo`).
+- `poolFinal`: `alvoNm` (padrão 4) e, opcionalmente, `tamanhoMedioPb` para calcular a molaridade.
 - Um kit sem o bloco `posPcr` (ou sem um dos sub-blocos) mostra a etapa correspondente como “sem parâmetros”.
 - Para um kit novo, copie um bloco `{ … }` inteiro, mude `id` e `nome`, e separe os kits com vírgula. Evite mudar o `id` de um kit em uso: as corridas e os pacotes guardam esse id.
 
 ### `fluxo-pre-pcr.json` e `fluxo-pos-pcr.json`
 
-Lista `etapas`, cada uma com `id`, `nome`, `tipo` e checklist. Tipos: `intake` (bateria), `normalize`, `mastermix`, `plate` no pré-PCR; `handoff` (pacotes do pré-PCR), `cleanup` (purificação com beads), `quant` (quantificação e diluição), `barcode` (mix de ligação + barcode por poço) e `mix` (mix com reagentes por poço, ex.: fragmentação) no pós-PCR. Nas etapas do pós-PCR, `"parametros"` aponta o sub-bloco de `posPcr` do kit.
+Lista `etapas`, cada uma com `id`, `nome`, `tipo` e checklist. Tipos: `intake` (bateria), `normalize`, `mastermix`, `plate` no pré-PCR; `handoff` (pacotes do pré-PCR), `cleanup` (purificação com beads), `quant` (quantificação e diluição), `barcode` (mix de ligação + barcode por poço), `pool` (Qubit HS de todas e pool equimolar), `poolqc` (quantificação final) e `mix` (mix com reagentes por poço, ex.: fragmentação) no pós-PCR. Nas etapas do pós-PCR, `"parametros"` aponta o sub-bloco de `posPcr` do kit.
 
 - Um item de texto é um passo de bancada que o técnico marca.
-- `{ "texto": "...", "auto": "<chave>" }` é marcado pelo app quando ele comprova a ação: `txt-loaded`, `maps-loaded`, `intake-ok`, `qas-generated`, `postrun-ok`, `lots-ok`, `cycler-set`, `handoff-done`, `pkg-loaded`, `pkg-ok`, `quant-sel`, `quant-done`, `bc-ok`.
+- `{ "texto": "...", "auto": "<chave>" }` é marcado pelo app quando ele comprova a ação: `txt-loaded`, `maps-loaded`, `intake-ok`, `qas-generated`, `postrun-ok`, `lots-ok`, `cycler-set`, `handoff-done`, `pkg-loaded`, `pkg-ok`, `quant-sel`, `quant-done`, `bc-ok`, `pool-read`, `pool-ok`, `poolqc-read`.
 - `"quando": "has-manual"` faz o item aparecer só quando há poços a completar à mão.
 - `"timer": "ligacaoMin"` dá cronômetro ao item (chaves de `tempos` terminadas em `Min` são minutos; em `Seg`, segundos). `"alerta": true` destaca o item.
 - `"icone": "magneto"` (placa na rack magnética) ou `"icone": "gelo"` mostra o ícone ao lado do passo; a etapa exibe no topo os ícones dos seus passos. `"icones": ["gelo"]` na etapa força o ícone no topo.
@@ -144,6 +148,10 @@ No `reagentes.json`, use o mesmo nome do reagente no `kits.json` para o lote apa
 - Carregue um ou mais pacotes `_pre-pcr.json`. Em cada placa, clique nos poços, nas colunas ou nas filas para escolher o que entra na rodada; os botões Todos, Só pendentes e Nenhum ajudam.
 - Com uma bateria só, a placa nova pode **manter as posições** da placa de PCR ou ser **compactada**; com várias baterias, os poços são compactados em sequência, por coluna, e a etapa de purificação mostra a tabela origem → poço novo.
 - O app registra, neste navegador, quais poços de cada bateria já entraram em uma rodada. Ao carregar a mesma bateria numa rodada seguinte (Limpar → Nova corrida), esses poços vêm desmarcados e marcados como “já em outra rodada”. Remover a bateria da rodada libera os poços.
+
+## Registro da biblioteca
+
+Na última etapa do pós-PCR, **Baixar registro (.json)** gera `<rodada>_biblioteca.json` (schema `bancada-ngs/biblioteca`): por poço, código IL_INICIAIS, bateria e poço de origem, DNA inicial, Qubit do amplicon, normalização usada, barcode (placa + poço), Qubit HS, volume no pool e massa relativa; mais a referência do pool, o pool final e os lotes de todos os reagentes.
 
 ## Código-fonte
 

@@ -105,6 +105,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 .qpick{display:grid;grid-template-columns:minmax(0,340px) 1fr;gap:16px 28px;align-items:start}
 @media (max-width:700px){.qpick{grid-template-columns:1fr}}
 .recipe{border:1px solid var(--line);border-left:4px solid var(--post);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--sunk)}
+.chart .refl{stroke:var(--ink);stroke-width:2}
+.chart .refo,.legend .refo{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.legend .refl{stroke:var(--ink);stroke-width:2}
+.chart .bar.under{fill:var(--m4)} .chart .bar.okb{fill:var(--m1)}
+tr.cur td{background:var(--post-bg)}
+.qcell.off{opacity:.5}
+.well.qw.okw{border-color:var(--m1)}
+.refseg{flex-wrap:wrap}
+.flowline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:8px 12px}
+.flowline .arr{color:var(--muted);font-size:13px}
 .bcplates{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,300px));gap:12px 20px}
 .bcplate{display:flex;flex-direction:column;gap:4px}
 .bcplate-h{display:flex;justify-content:space-between;align-items:baseline}
@@ -369,6 +379,7 @@ const NORM_MAP = [['target', 'concAlvo'], ['finalVol', 'volumeFinal'], ['mode', 
 const getPath = (o, p) => p.split('.').reduce((a, k) => a == null ? a : a[k], o);
 const setPath = (o, p, v) => { const ks = p.split('.'); let a = o; ks.slice(0, -1).forEach(k => { a = a[k] ||= {}; }); a[ks[ks.length - 1]] = v; };
 const chkItems = l => (l || []).map(x => typeof x === 'string' ? x : { text: x.texto, auto: x.auto, when: x.quando, timer: x.timer, alert: !!x.alerta, icon: x.icone });
+const progOf = l => (l || []).map(r => ({ stage: r.etapa, temp: r.temperatura, time: r.tempo, cycles: r.ciclos }));
 function composeProtocol(flow, kit) {
   const n = { ...NORM_DEFAULT }; NORM_MAP.forEach(([i, p]) => { const v = getPath(kit.normalizacao || {}, p); if (v != null) n[i] = v; });
   const mixes = (Array.isArray(kit.masterMix) ? kit.masterMix : [kit.masterMix]).filter(Boolean), m0 = mixes[0] || {};
@@ -381,16 +392,16 @@ function composeProtocol(flow, kit) {
       if (e.tipo === 'mastermix') {
         st.config = { rxnVol: +m0.volumeReacao || 0, templateVol: m0.volumeDNA ?? n.finalVol, overage: m0.excedentePercentual ?? 10, controls: [],
           mixes: mixes.map(m => ({ name: m.nome || 'Master mix', components: (m.reagentes || []).map(r => ({ name: r.nome, vol: +r.volumePorAmostra || 0 })) })),
-          program: (kit.termociclagem || []).map(r => ({ stage: r.etapa, temp: r.temperatura, time: r.tempo, cycles: r.ciclos })) };
+          program: progOf(kit.termociclagem) };
         st.warnings = kit.avisos || [];
       }
       if (e.tipo === 'plate') st.config = { rows: 8, cols: 12 };
-      if (e.tipo === 'cleanup' || e.tipo === 'handoff' || e.tipo === 'quant') st.config = clone(getPath(kit, 'posPcr.' + (e.parametros || '')) || {});
+      if (['cleanup', 'handoff', 'quant', 'pool', 'poolqc'].includes(e.tipo)) st.config = clone(getPath(kit, 'posPcr.' + (e.parametros || '')) || {});
       if (e.tipo === 'barcode') {   // mix de ligação + barcode específico por poço
         const q = getPath(kit, 'posPcr.' + (e.parametros || '')) || {}, comps = (q.reagentes || []).map(r => ({ name: r.nome, vol: +r.volumePorAmostra || 0 })), bc = q.barcode || {};
         st.post = true;
         st.config = { rxnVol: (+q.volumeAmostra || 0) + comps.reduce((a, k) => a + k.vol, 0) + (+bc.volumePorAmostra || 0), templateVol: +q.volumeAmostra || 0, overage: q.excedentePercentual ?? 10, controls: [],
-          mixes: comps.length ? [{ name: q.nome || 'Mix', components: comps }] : [], program: [], post: true, tempos: q.tempos || {}, empty: !comps.length, barcode: bc, extraVol: +bc.volumePorAmostra || 0,
+          mixes: comps.length ? [{ name: q.nome || 'Mix', components: comps }] : [], program: progOf(q.termociclagem), post: true, tempos: q.tempos || {}, empty: !comps.length, barcode: bc, extraVol: +bc.volumePorAmostra || 0,
           templateHint: `Amplicon fragmentado: <span class="num">${fmt(+q.volumeAmostra || 0)} <span class="u">µL</span></span> por poço. Barcode: <span class="num">${fmt(+bc.volumePorAmostra || 0)} <span class="u">µL</span></span> por poço, adicionado à parte (específico de cada poço).` };
         st.warnings = q.avisos || [];
       }
@@ -398,7 +409,8 @@ function composeProtocol(flow, kit) {
         const q = getPath(kit, 'posPcr.' + (e.parametros || '')) || {}, comps = (q.reagentes || []).map(r => ({ name: r.nome, vol: +r.volumePorAmostra || 0 }));
         st.type = 'mastermix'; st.post = true;
         st.config = { rxnVol: (+q.volumeAmostra || 0) + comps.reduce((a, k) => a + k.vol, 0), templateVol: +q.volumeAmostra || 0, overage: q.excedentePercentual ?? 10, controls: [],
-          mixes: comps.length ? [{ name: q.nome || 'Mix', components: comps }] : [], program: [], post: true, tempos: q.tempos || {}, empty: !comps.length };
+          mixes: comps.length ? [{ name: q.nome || 'Mix', components: comps }] : [], program: progOf(q.termociclagem), post: true, tempos: q.tempos || {}, empty: !comps.length,
+          templateHint: q.textoAmostra ? `${esc(q.textoAmostra)}: <span class="num">${fmt(+q.volumeAmostra || 0)} <span class="u">µL</span></span> por poço. Volume final por poço: <span class="num">${fmt((+q.volumeAmostra || 0) + comps.reduce((a, k) => a + k.vol, 0))} <span class="u">µL</span></span>.` : null };
         st.warnings = q.avisos || [];
       }
       return st;
@@ -419,7 +431,7 @@ function validateKit(k) {
 }
 function validateFlow(f) {
   if (!f || !Array.isArray(f.etapas) || !f.etapas.length) return 'Falta a lista "etapas".';
-  const types = ['intake', 'normalize', 'mastermix', 'plate', 'placeholder', 'handoff', 'cleanup', 'quant', 'mix', 'barcode'];
+  const types = ['intake', 'normalize', 'mastermix', 'plate', 'placeholder', 'handoff', 'cleanup', 'quant', 'mix', 'barcode', 'pool', 'poolqc'];
   for (const e of f.etapas) { if (!e.id || !e.nome) return 'Toda etapa precisa de "id" e "nome".'; if (!types.includes(e.tipo)) return `Etapa "${e.id}": tipo "${e.tipo}" desconhecido.`; }
   if (new Set(f.etapas.map(e => e.id)).size !== f.etapas.length) return 'Há etapas com "id" repetido.';
   return null;
@@ -628,6 +640,7 @@ function outputOf(step) {
     case 'intake': return intakeState(step).rows.filter(r => r.include).map(({ qc, include, found, edited, ...r }) => r);
     case 'normalize': return normState(step).items;
     case 'handoff': return pkgState(step)?.rows || [];
+    case 'pool': return poolState(step).P.rows.map(({ key, status, mass, ...r }) => ({ ...r, poolVol: r.vol, poolMass: mass }));
     case 'barcode': return bcState(step).items.map(({ key, ok, other, dup, wellRaw, edited, plate, well, ...r }) => ({ ...r, bcPlate: ok ? plate : null, bcWell: ok ? well : null, barcode: ok ? bcId(plate, well) : null }));
     case 'quant': return quantState(step).items.map(({ key, sel, why, status, calc, used, ...r }) => ({ ...r, quantified: sel && r.qubit > 0, usedCalc: used, calcVol: calc ? calc.vAmp : null, note: status[1] }));
     default: return s.rows;
@@ -713,6 +726,9 @@ function autoCheck(step, key) {
     case 'cycler-set': return !!cyclerFor(s.cycler);
     case 'handoff-done': return !!s.handoffAt;
     case 'pkg-loaded': migratePkg(s); return !!(s.pkgs || []).length;
+    case 'pool-read': { const S = poolState(step); return S.items.length > 0 && !S.pending; }
+    case 'pool-ok': { const S = poolState(step); return S.ref != null && !S.pending && S.P.ok && !S.issues.some(i => i[0] === 'bad'); }
+    case 'poolqc-read': return st(step.id).fq > 0;
     case 'bc-ok': { const B = bcState(step); return B.items.length > 0 && !B.dups.length && !B.empty.length; }
     case 'quant-sel': return quantState(step).selected.length > 0;
     case 'quant-done': { const Q = quantState(step); return Q.selected.length > 0 && !Q.pending && Q.items.every(i => i.vAmp != null); }
@@ -801,8 +817,8 @@ function renderWork() {
     html += nx ? `<section class="panel"><div class="panel-h"><h3>Saída da etapa</h3><button class="btn primary" data-act="next">Ir para “${esc(nx.name)}”</button></div>
       <p class="hint">A próxima etapa importa esta lista diretamente. Para registro ou LIMS, exporte em CSV (separador ;).</p>
       <div class="row"><button class="btn" data-act="export-csv">Exportar CSV</button></div></section>`
-      : MODULE === 'pos' ? `<section class="panel"><div class="panel-h"><h3>Saída da etapa</h3></div>
-      <p class="hint">Última etapa configurada no pós-PCR. As próximas entram no <span class="mono">fluxo-pos-pcr.json</span> quando forem definidas.</p>
+      : MODULE === 'pos' ? `<section class="panel"><div class="panel-h"><h3>Registro da biblioteca</h3><button class="btn primary" data-act="lib-record">Baixar registro (.json)</button></div>
+      <p class="hint">Fim do pós-PCR. O registro reúne, por poço: código IL_INICIAIS, bateria e poço de origem, quantificações, normalização, barcode (placa + poço), volume no pool, além dos lotes de reagentes e do pool final. Guarde junto com a corrida de sequenciamento.</p>
       <div class="row"><button class="btn" data-act="export-csv">Exportar CSV</button></div></section>`
       : `<section class="panel"><div class="panel-h"><h3>Entrega para o pós-PCR</h3><button class="btn primary" data-act="handoff">Gerar pacote pós-PCR (.json)</button></div>
       <p class="hint">Fim do pré-PCR. O pacote leva o mapa da placa com os códigos IL_INICIAIS, a normalização prevista, a validação do QIAgility e os passos concluídos. É a entrada do app do pós-PCR. Não contém nomes de pacientes.</p>
@@ -919,30 +935,34 @@ async function loadPkg(files) {
 /* ---------- pós-PCR: purificação com beads (AMPure) ---------- */
 const fmtN = v => v == null || !isFinite(v) ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 function cleanupState(step) {
-  const c = step.config || {}, s = st(step.id), n = s.rows.filter(r => r.include !== false).length;
+  const c = step.config || {}, s = st(step.id), n = c.tuboUnico ? 1 : s.rows.filter(r => r.include !== false).length, sel = c.selecao || null;
   const ov = s.overrides.overage ?? c.excedentePercentual ?? 10, f = n * (1 + ov / 100);
   const etOv = s.overrides.etOverage ?? c.excedenteEtanolPercentual ?? ov, fe = n * (1 + etOv / 100);   // etanol: margem própria (evaporação, pipetagem com multicanal)
-  const beads = (+c.volumeAmostra || 0) * (+c.razaoBeads || 0), et = (+c.volumeEtanol || 0) * (+c.lavagensEtanol || 0), el = +c.volumeEluicao || 0;
+  const beadsNeg = sel ? +sel.volumeBeadsNegativa || 0 : 0, beadsPos = sel ? +sel.volumeBeadsPositiva || 0 : 0;
+  const beads = sel ? beadsNeg + beadsPos : (+c.volumeBeads || (+c.volumeAmostra || 0) * (+c.razaoBeads || 0)), et = (+c.volumeEtanol || 0) * (+c.lavagensEtanol || 0), el = +c.volumeEluicao || 0;
   const rg = c.reagentes || {}, pct = +c.etanolPercentual || 75, t = c.tempos || {};
   const reagents = [
-    { key: 'beads', name: rg.beads || 'AMPure XP beads', per: beads, total: beads * f, note: `${fmtN(c.razaoBeads)}× sobre ${fmtN(c.volumeAmostra)} µL de amplicon` },
+    { key: 'beads', name: rg.beads || 'AMPure XP beads', per: beads, total: beads * f, note: sel ? `seleção negativa ${fmtN(beadsNeg)} µL + positiva ${fmtN(beadsPos)} µL` : `${fmtN(beads / (+c.volumeAmostra || 1))}× sobre ${fmtN(c.volumeAmostra)} µL ${c.tuboUnico ? 'do pool' : 'de amplicon'}` },
     { key: 'etanol', name: rg.etanol || 'Etanol absoluto', per: et * pct / 100, total: et * fe * pct / 100, note: `para o etanol ${fmtN(pct)}% (margem ${fmtN(etOv)}%)`, ov: etOv },
     { key: 'eluicao', name: rg.eluicao || 'Low TE', per: el, total: el * f, note: 'eluição' }];
   const etTotal = et * fe, etAbs = etTotal * pct / 100, etWater = etTotal - etAbs;
-  const vars = { amostra: c.volumeAmostra, razao: c.razaoBeads, beads, etanol: c.volumeEtanol, lavagens: c.lavagensEtanol, etanolPct: pct, eluicao: el, transferencia: c.volumeTransferencia,
+  const vars = { amostra: c.volumeAmostra, razao: c.razaoBeads, beads, beadsNeg, beadsPos, transfSelecao: sel?.volumeTransferencia1, descarteSelecao: sel?.volumeDescarte, etanol: c.volumeEtanol, lavagens: c.lavagensEtanol, etanolPct: pct, eluicao: el, transferencia: c.volumeTransferencia,
     reagenteBeads: reagents[0].name, reagenteEluicao: reagents[2].name, reagenteEtanol: reagents[1].name, etanolMargem: etOv,
     etanolTotal: mlTxt(etTotal), etanolAbs: mlTxt(etAbs), etanolAgua: mlTxt(etWater), ...t };
-  return { c, n, ov, etOv, f, fe, beads, et, el, reagents, etTotal, etAbs, etWater, pct, vars };
+  return { c, n, ov, etOv, f, fe, beads, beadsNeg, beadsPos, sel, et, el, reagents, etTotal, etAbs, etWater, pct, vars, unit: c.tuboUnico ? 'tubo' : 'poço' };
 }
 const mlTxt = v => v >= 1000 ? `${fmtN(v / 1000)} mL` : `${fmtN(v)} µL`;
 const tubeFor = v => v <= 1400 ? 'microtubo de 1,5 mL' : v <= 1900 ? 'microtubo de 2 mL' : v <= 4500 ? 'tubo de 5 mL' : v <= 14000 ? 'tubo cônico de 15 mL' : 'tubo cônico de 50 mL';
+const enzymesOf = x => joinPt((x?.components || []).map(k => k.name).filter(n => /enzyme|enzima|fragmentase|\bpol\b|polimerase/i.test(n))) || 'as enzimas';
 function stepVars(step) {
   if (step.type === 'cleanup') return cleanupState(step).vars;
   if (step.type === 'quant') return quantState(step).vars;
+  if (step.type === 'pool') return poolState(step).vars;
+  if (step.type === 'poolqc') return poolqcState(step).vars;
   if (step.type === 'barcode') { const m = mmState(step), x = m.mixes[0];
-    return { mixPorPoco: x ? x.perRx : null, amostra: step.config.templateVol, reacoes: m.nRx, barcodeVol: bcCfg(step).vol, barcode: bcCfg(step).name, reagenteEnzimas: joinPt((x?.components || []).map(k => k.name).filter(n => /enzyme|enzima|\bpol\b|polimerase|ligase$/i.test(n))) || 'as enzimas', volumeFinal: step.config.rxnVol, ...(step.config.tempos || {}) }; }
+    return { mixPorPoco: x ? x.perRx : null, amostra: step.config.templateVol, reacoes: m.nRx, barcodeVol: bcCfg(step).vol, barcode: bcCfg(step).name, reagenteEnzimas: enzymesOf(x), volumeFinal: step.config.rxnVol, ...(step.config.tempos || {}) }; }
   if (step.type === 'mastermix' && step.post) { const m = mmState(step), x = m.mixes[0];
-    return { mixPorPoco: x ? x.perRx : null, amostra: step.config.templateVol, reacoes: m.nRx, ...Object.fromEntries((x?.components || []).map((k, i) => ['reagente' + (i + 1), k.name])), ...(step.config.tempos || {}) }; }
+    return { mixPorPoco: x ? x.perRx : null, amostra: step.config.templateVol, reacoes: m.nRx, reagenteEnzimas: enzymesOf(x), ...Object.fromEntries((x?.components || []).map((k, i) => ['reagente' + (i + 1), k.name])), ...(step.config.tempos || {}) }; }
   return null;
 }
 function fillVars(step, text) {
@@ -960,28 +980,35 @@ function transferNote(step, c) {
     ${rows.map(r => `<tr><td class="mono">${esc(r.srcBatch || '')} · ${esc(r.srcWell || '')}</td><td class="muted">→</td><td><span class="well-tag">${r.destWell}</span></td><td class="mono">${esc(r.code)}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 function renderCleanup(step) {
-  const C = cleanupState(step), c = C.c, s = st(step.id);
-  const ml = mlTxt;
-  let h = `<section class="panel"><div class="panel-h"><h3>${esc(c.nome || step.name)}</h3><span class="hint">${fmtN(c.razaoBeads)}× · ${fmtN(c.volumeAmostra)} µL de amplicon por poço</span></div>
-    <div class="kpis"><div class="kpi"><span class="label">Poços</span><span class="num">${C.n}</span></div>
-      <div class="kpi"><span class="label">Beads por poço</span><span class="num">${fmtN(C.beads)} <span class="u">µL</span></span></div>
-      <div class="kpi"><span class="label">Etanol ${fmtN(C.pct)}% por poço</span><span class="num">${fmtN(c.lavagensEtanol)} × ${fmtN(c.volumeEtanol)} <span class="u">µL</span></span></div>
-      <div class="kpi"><span class="label">Eluição / transferência</span><span class="num">${fmtN(C.el)} / ${fmtN(c.volumeTransferencia)} <span class="u">µL</span></span></div></div>
+  const C = cleanupState(step), c = C.c, u = C.unit, us = u === 'tubo' ? 'tubos' : 'poços';
+  const ml = mlTxt, first = proto().steps.find(x => x.type === 'cleanup') === step;
+  const head = C.sel ? `dupla seleção · ${fmtN(c.volumeAmostra)} µL por ${u}` : `${fmtN(C.beads / (+c.volumeAmostra || 1))}× · ${fmtN(c.volumeAmostra)} µL ${c.tuboUnico ? 'do pool' : 'de amplicon por poço'}`;
+  let h = `<section class="panel"><div class="panel-h"><h3>${esc(c.nome || step.name)}</h3><span class="hint">${head}</span></div>
+    <div class="kpis"><div class="kpi"><span class="label">${u === 'tubo' ? 'Tubo' : 'Poços'}</span><span class="num">${C.n}</span></div>
+      ${C.sel ? `<div class="kpi"><span class="label">Beads seleção negativa</span><span class="num">${fmtN(C.beadsNeg)} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Transferir p/ placa 2</span><span class="num">${fmtN(C.sel.volumeTransferencia1)} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Beads seleção positiva</span><span class="num">${fmtN(C.beadsPos)} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Descartar (placa 2)</span><span class="num">${fmtN(C.sel.volumeDescarte)} <span class="u">µL</span></span></div>`
+      : `<div class="kpi"><span class="label">Beads por ${u}</span><span class="num">${fmtN(C.beads)} <span class="u">µL</span></span></div>`}
+      <div class="kpi"><span class="label">Etanol ${fmtN(C.pct)}% por ${u}</span><span class="num">${fmtN(c.lavagensEtanol)} × ${fmtN(c.volumeEtanol)} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Eluição / recuperação</span><span class="num">${fmtN(C.el)} / ${fmtN(c.volumeTransferencia)} <span class="u">µL</span></span></div></div>
+    ${C.sel ? `<div class="flowline"><span><b>Placa 1</b> ${fmtN(c.volumeAmostra)} µL + ${fmtN(C.beadsNeg)} µL beads</span><span class="arr">→ 5 min, rack →</span><span><b>Placa 2</b> ${fmtN(C.sel.volumeTransferencia1)} µL sobrenadante + ${fmtN(C.beadsPos)} µL beads</span><span class="arr">→ 5 min, rack, descarta ${fmtN(C.sel.volumeDescarte)} µL, 2 lavagens →</span><span><b>Placa 3</b> ${fmtN(c.volumeTransferencia)} µL eluído</span></div>` : ''}
     <div class="ctrls">${numField('cl-over', 'overage', 'Excedente beads e eluição (%)', C.ov, 0)}${numField('cl-etover', 'etOverage', 'Margem do etanol (%)', C.etOv, 0)}</div>
     ${lotBanner(step)}
-    <div class="tbl"><table><thead><tr><th>Reagente</th><th>Uso</th><th class="r">Por poço</th><th class="r">Total (${C.n} poços + excedente)</th><th>Lote · validade</th></tr></thead><tbody>
+    <div class="tbl"><table><thead><tr><th>Reagente</th><th>Uso</th><th class="r">Por ${u}</th><th class="r">Total (${C.n} ${C.n > 1 ? us : u} + excedente)</th><th>Lote · validade</th></tr></thead><tbody>
     ${C.reagents.map(r => `<tr><td>${esc(r.name)}</td><td class="muted">${esc(r.note)}</td><td class="r num">${fmtN(r.per)} <span class="u">µL</span></td><td class="r num"><b>${ml(r.total)}</b></td><td>${lotCell(step, r.key, r.name)}</td></tr>`).join('')}
     </tbody></table></div>
     ${ethanolPrep(C)}
-    ${Math.abs((+c.volumeEluicao || 0) - (+c.volumeTransferencia || 0)) > 0 && +c.volumeTransferencia > +c.volumeEluicao ? '<div class="banner bad"><span>O volume transferido é maior que o de eluição. Confira o kit.</span></div>' : ''}
-    ${transferNote(step, c)}</section>`;
-  return h + renderPlate(step);
+    ${+c.volumeTransferencia > +c.volumeEluicao ? '<div class="banner bad"><span>O volume recuperado é maior que o de eluição. Confira o kit.</span></div>' : ''}
+    ${c.tuboUnico ? `<p class="hint">Pool em tubo de 1,5 mL: use a rack magnética para microtubos. Ao final, recuperar ${fmtN(c.volumeTransferencia)} <span class="u">µL</span> para um tubo novo identificado.</p>`
+      : first ? transferNote(step, c) : `<p class="hint">Ao final, o eluído (${fmtN(c.volumeTransferencia)} <span class="u">µL</span>) vai para uma <b>placa nova, nas mesmas posições</b> do mapa abaixo.</p>`}</section>`;
+  return h + (c.tuboUnico ? '' : renderPlate(step));
 }
 function ethanolPrep(C) {
   const c = C.c, perWell = C.et, name = C.reagents[1].name;
   return `<div class="recipe"><div class="recipe-h"><b>Preparo do etanol ${fmtN(C.pct)}% (fresco, no dia)</b><span class="hint">margem de segurança de ${fmtN(C.etOv)}%</span></div>
-    <div class="calc"><span>${fmtN(c.lavagensEtanol)} lavagens × ${fmtN(c.volumeEtanol)} <span class="u">µL</span> = <b>${fmtN(perWell)} <span class="u">µL</span></b> por poço</span>
-      <span>${fmtN(perWell)} <span class="u">µL</span> × ${C.n} poços × ${fmtN(1 + C.etOv / 100)} = <b>${mlTxt(C.etTotal)}</b> de etanol ${fmtN(C.pct)}%</span>
+    <div class="calc"><span>${fmtN(c.lavagensEtanol)} lavagens × ${fmtN(c.volumeEtanol)} <span class="u">µL</span> = <b>${fmtN(perWell)} <span class="u">µL</span></b> por ${C.unit}</span>
+      <span>${fmtN(perWell)} <span class="u">µL</span> × ${C.n} ${C.unit === 'tubo' ? 'tubo' : 'poços'} × ${fmtN(1 + C.etOv / 100)} = <b>${mlTxt(C.etTotal)}</b> de etanol ${fmtN(C.pct)}%</span>
       <span>${name}: ${mlTxt(C.etTotal)} × ${fmtN(C.pct / 100)} = <b>${mlTxt(C.etAbs)}</b></span>
       <span>Água livre de nuclease: ${mlTxt(C.etTotal)} × ${fmtN(1 - C.pct / 100)} = <b>${mlTxt(C.etWater)}</b></span></div>
     <ol class="steps-mini"><li>Em um ${tubeFor(C.etTotal)} identificado (“Etanol ${fmtN(C.pct)}%”, data, técnico), pipetar <b>${mlTxt(C.etWater)}</b> de água livre de nuclease.</li>
@@ -1222,6 +1249,190 @@ function renderBarcode(step) {
     <p class="hint">A associação amplicon → barcode segue para as próximas etapas e para o CSV. O registro de barcodes já usados fica neste navegador.</p></section>`;
   return h;
 }
+/* ---------- pós-PCR: Qubit HS de todas as bibliotecas e pool equimolar ---------- */
+const QUBIT_DEF = { padroes: 2, volumeTrabalho: 200, diluicaoReagente: 200, volumePadrao: 10, excedentePercentual: 10 };
+function qubitCalc(nSamples, Q, input) {
+  Q = { ...QUBIT_DEF, ...(Q || {}) }; const n = nSamples + (+Q.padroes || 0), ws = n * Q.volumeTrabalho * (1 + Q.excedentePercentual / 100), rg = ws / Q.diluicaoReagente;
+  return { Q, n, ws, reagent: rg, buffer: ws - rg, sampleWs: Q.volumeTrabalho - input, stdWs: Q.volumeTrabalho - Q.volumePadrao };
+}
+const qubitBox = (k, nS, what, input) => `<div class="recipe"><div class="recipe-h"><b>Solução de trabalho do Qubit</b><span class="hint">${k.n} tubos (${nS} ${what} + ${fmtN(k.Q.padroes)} padrões) + ${fmtN(k.Q.excedentePercentual)}%</span></div>
+  <div class="calc"><span>Total: <b>${mlTxt(k.ws)}</b> = ${mlTxt(k.reagent)} de reagente (1:${fmtN(k.Q.diluicaoReagente)}) + ${mlTxt(k.buffer)} de tampão</span>
+  <span>Amostra: <b>${fmtN(k.sampleWs)} <span class="u">µL</span></b> de solução + ${fmtN(input)} <span class="u">µL</span></span>
+  <span>Padrões: <b>${fmtN(k.stdWs)} <span class="u">µL</span></b> de solução + ${fmtN(k.Q.volumePadrao)} <span class="u">µL</span> de cada padrão</span></div></div>`;
+function quantile(sorted, p) { if (!sorted.length) return null; const h = (sorted.length - 1) * p, lo = Math.floor(h); return sorted[lo] + (sorted[Math.min(lo + 1, sorted.length - 1)] - sorted[lo]) * (h - lo); }
+const POOL_REFS = {
+  min: ['Menor concentração', 'todas as bibliotecas com a mesma massa; a menos concentrada define o pool'],
+  tukey: ['Menor sem outliers', 'a menor concentração entre as que não são outliers baixos (abaixo de Q1 − 1,5 × IQR)'],
+  p10: ['Percentil 10', '10% das bibliotecas ficam abaixo da referência'],
+  q1: ['1º quartil (Q1)', '25% das bibliotecas ficam abaixo da referência'],
+  manual: ['Valor manual', 'concentração de referência digitada pelo técnico'] };
+function poolCfg(step) {
+  const c = step.config || {}, ov = st(step.id).overrides;
+  return { metodo: c.metodo || 'Qubit dsDNA HS', input: +c.volumeInput || 1, vmax: ov.vmax ?? (+c.volumeMaximo || 10), minVol: +c.volumeMinimo || 1, dec: c.casasDecimais ?? 1,
+    minPoolVol: ov.minPoolVol ?? (+c.volumeMinimoPool || 100), minPoolConc: ov.minPoolConc ?? (+c.concMinimaPool || 1.4), diluente: c.diluente || 'Low TE',
+    ref: st(step.id).pref || c.referencia || 'q1', manual: st(step.id).pman ?? null, cnVol: c.volumeControleNegativo ?? null, qubit: c.qubit,
+    reagentes: { kit: 'Qubit dsDNA HS Assay Kit', ...(c.reagentes || {}) }, tempos: c.tempos || {} };
+}
+function poolRefs(vals) {
+  const v = vals.slice().sort((a, b) => a - b); if (!v.length) return {};
+  const q1 = quantile(v, 0.25), q3 = quantile(v, 0.75), fence = q1 - 1.5 * (q3 - q1);
+  return { min: v[0], p10: quantile(v, 0.10), q1, q3, med: quantile(v, 0.5), fence, tukey: v.find(x => x >= fence), outliers: v.filter(x => x < fence).length };
+}
+function poolCompute(items, cfg, ref) {
+  const rows = items.map(i => {
+    const o = { ...i, vol: null, predil: 0, mass: null, repr: null, status: ['info', 'Aguardando leitura'] };
+    if (!i.inPool) { o.status = ['info', 'Fora do pool']; return o; }
+    if (i.kind === 'cn') { o.vol = cfg.cnVol ?? cfg.vmax; o.mass = (i.qhs > 0 ? i.qhs : 0) * o.vol; o.status = ['info', 'CN: volume fixo']; return o; }
+    if (!(i.qhs > 0) || !(ref > 0)) return o;
+    let v = cfg.vmax * ref / i.qhs;
+    if (v >= cfg.vmax) { o.vol = cfg.vmax; o.mass = cfg.vmax * i.qhs; }
+    else if (v < cfg.minVol) { const f = [2, 5, 10, 20, 50, 100].find(x => v * x >= cfg.minVol) || 100; o.predil = f; o.vol = roundTo(v * f, cfg.dec); o.mass = o.vol * i.qhs / f; }
+    else { o.vol = roundTo(v, cfg.dec); o.mass = o.vol * i.qhs; }
+    o.repr = o.mass / (cfg.vmax * ref);
+    o.status = o.predil ? ['warn', `Pré-diluir 1:${o.predil} em ${cfg.diluente} (${fmtN(cfg.minVol)} µL + ${fmtN(cfg.minVol * (o.predil - 1))} µL)`] : i.qhs < ref - 1e-9 ? ['warn', `Abaixo da referência: ${fmtN(Math.round(o.repr * 100))}% da massa`] : ['ok', 'Normalizada'];
+    return o;
+  });
+  const inP = rows.filter(r => r.vol != null), sumV = inP.reduce((a, r) => a + r.vol, 0), mass = inP.reduce((a, r) => a + (r.mass || 0), 0);
+  const conc0 = sumV ? mass / sumV : null;
+  let finalVol = sumV, te = 0, ok = true, note = '';
+  if (sumV < cfg.minPoolVol) {
+    const c100 = mass / cfg.minPoolVol;
+    if (c100 >= cfg.minPoolConc) { finalVol = cfg.minPoolVol; te = cfg.minPoolVol - sumV; }
+    else { finalVol = Math.max(sumV, mass / cfg.minPoolConc); te = finalVol - sumV; ok = false; note = `Completando até ${fmtN(cfg.minPoolVol)} µL a concentração cairia para ${fmtN(roundTo(c100, 2))} ng/µL (mínimo ${fmtN(cfg.minPoolConc)}).`; }
+  }
+  const s = rows.filter(r => r.repr != null);
+  return { rows, sumV, mass, conc0, finalVol, te: roundTo(te, cfg.dec), conc: finalVol ? mass / finalVol : null, ok: ok && finalVol >= cfg.minPoolVol - 1e-9,
+    note, under: s.filter(r => r.qhs < ref - 1e-9).length, minRepr: s.length ? Math.min(1, ...s.filter(r => r.qhs < ref - 1e-9).map(r => r.repr)) : null, nPre: rows.filter(r => r.predil).length, n: s.length };
+}
+function poolState(step) {
+  const s = st(step.id), cfg = poolCfg(step), pv = s.pv || {}, ex = s.pexcl || {};
+  const items = s.rows.map(r => ({ ...r, key: rk(r), qhs: pv[rk(r)] ?? null, inPool: !ex[rk(r)] }));
+  const vals = items.filter(i => i.inPool && i.kind !== 'cn' && i.qhs > 0).map(i => i.qhs), R = poolRefs(vals);
+  const refOf = k => k === 'manual' ? cfg.manual : R[k];
+  const ref = refOf(cfg.ref) ?? null, P = poolCompute(items, cfg, ref);
+  const compare = Object.keys(POOL_REFS).filter(k => k !== 'manual' || cfg.manual > 0).map(k => ({ k, ref: refOf(k), ...poolCompute(items, cfg, refOf(k)) }));
+  const pending = items.filter(i => i.inPool && i.kind !== 'cn' && !(i.qhs > 0)).length;
+  const issues = [];
+  if (pending) issues.push(['warn', `${pending} biblioteca(s) sem leitura do Qubit HS.`]);
+  if (ref != null && ref < cfg.minPoolConc) issues.push(['warn', `A referência (${fmtN(roundTo(ref, 2))} ng/µL) está abaixo de ${fmtN(cfg.minPoolConc)} ng/µL.`]);
+  if (!pending && ref != null && !P.ok) issues.push(['bad', `O pool não chega a ${fmtN(cfg.minPoolVol)} µL com pelo menos ${fmtN(cfg.minPoolConc)} ng/µL. ${P.note} Escolha uma referência mais alta ou aumente o volume máximo por biblioteca.`]);
+  if (P.nPre) issues.push(['warn', `${P.nPre} biblioteca(s) muito concentrada(s): pré-diluir antes de pipetar no pool.`]);
+  const kq = qubitCalc(items.filter(i => i.inPool).length, cfg.qubit, cfg.input);
+  const vars = { input: cfg.input, metodo: cfg.metodo, reagenteQubit: cfg.reagentes.kit, volumeMaximo: cfg.vmax, volumePool: roundTo(P.finalVol || 0, 1), lowTE: P.te, diluente: cfg.diluente,
+    trabalhoTotal: mlTxt(kq.ws), trabalhoReagente: mlTxt(kq.reagent), trabalhoTampao: mlTxt(kq.buffer), tubosQubit: kq.n, volTrabalhoAmostra: kq.sampleWs, volTrabalhoPadrao: kq.stdWs, volPadrao: kq.Q.volumePadrao, ...cfg.tempos };
+  return { cfg, items, R, ref, P, compare, pending, issues, kq, vars, vals };
+}
+function stripSvg(S) {
+  const pts = S.P.rows.filter(r => r.inPool && r.kind !== 'cn' && r.qhs > 0).sort((a, b) => a.qhs - b.qhs);
+  if (pts.length < 3) return '<div class="chart-empty">O gráfico aparece com 3 ou mais bibliotecas quantificadas.</div>';
+  const W = 410, H = 210, L = 40, R = 132, T = 12, B = 28, vmax = Math.max(...pts.map(p => p.qhs)), ys = niceStep(vmax, 4), ymax = Math.ceil(vmax / ys) * ys;
+  const x = i => L + (W - L - R) * (pts.length === 1 ? 0.5 : i / (pts.length - 1)), y = v => T + (H - T - B) * (1 - v / ymax);
+  let g = '';
+  for (let t = 0; t <= ymax + 1e-9; t += ys) g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" class="gl"/><text x="${L - 6}" y="${y(t) + 4}" class="tk" text-anchor="end">${fmtN(t)}</text>`;
+  const merged = {}; [['min', 'mín.'], ['tukey', 's/ outl.'], ['p10', 'P10'], ['q1', 'Q1']].forEach(([k, lab]) => { const v = S.R[k]; if (v == null) return; const id = v.toFixed(3); (merged[id] ||= { v, labs: [], keys: [] }).labs.push(lab); merged[id].keys.push(k); });
+  const lines = Object.values(merged).map(m => [m.keys.includes(S.cfg.ref) ? S.cfg.ref : m.keys[0], m.labs.join(' = '), m.v]);
+  let lastY = -99; lines.sort((a, b) => b[2] - a[2]).forEach(([k, lab, v]) => { const sel = k === S.cfg.ref, yy = y(v); const ly = Math.abs(yy - lastY) < 11 ? lastY + 11 : yy; lastY = ly;
+    g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" class="${sel ? 'refl' : 'refo'}"/><text x="${W - R + 4}" y="${ly + 3.5}" class="tk ${sel ? 'strong' : ''}">${lab} ${fmtN(roundTo(v, 1))}</text>`; });
+  if (S.cfg.ref === 'manual' && S.ref) g += `<line x1="${L}" x2="${W - R}" y1="${y(S.ref)}" y2="${y(S.ref)}" class="refl"/><text x="${W - R + 4}" y="${y(S.ref) + 3.5}" class="tk strong">manual ${fmtN(S.ref)}</text>`;
+  pts.forEach((p, i) => { const under = S.ref && p.qhs < S.ref - 1e-9; g += `<circle cx="${x(i)}" cy="${y(p.qhs)}" r="4.5" fill="${under ? 'var(--m4)' : 'var(--m1)'}" class="pt"><title>${esc(p.destWell + ' · ' + p.code)}: ${fmtN(p.qhs)} ng/µL</title></circle>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Concentração das bibliotecas em ordem crescente, com as referências">${g}<text x="${(W - R + L) / 2}" y="${H - 6}" class="tk" text-anchor="middle">bibliotecas em ordem crescente</text><text x="10" y="${(H - B + T) / 2}" class="tk" text-anchor="middle" transform="rotate(-90 10 ${(H - B + T) / 2})">Qubit HS (ng/µL)</text></svg>
+  <div class="legend"><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--m1)"/></svg>Na referência ou acima</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--m4)"/></svg>Abaixo (sub-representada)</span><span><svg width="18" height="12"><line x1="0" x2="18" y1="6" y2="6" class="refl"/></svg>Referência escolhida</span></div>`;
+}
+function reprSvg(S) {
+  const pts = S.P.rows.filter(r => r.repr != null).sort((a, b) => a.repr - b.repr);
+  if (pts.length < 3) return '<div class="chart-empty">Aparece com 3 ou mais bibliotecas quantificadas.</div>';
+  const W = 360, H = 210, L = 40, R = 10, T = 12, B = 28, n = pts.length, bw = (W - L - R) / n, y = v => T + (H - T - B) * (1 - Math.min(v, 1.2) / 1.2);
+  let g = '';
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => g += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" class="gl"/><text x="${L - 6}" y="${y(t) + 4}" class="tk" text-anchor="end">${t * 100}%</text>`);
+  pts.forEach((p, i) => { const x0 = L + i * bw + (bw > 4 ? 1 : 0), w = Math.max(1, bw - (bw > 4 ? 2 : 0)), y0 = y(p.repr), hh = H - B - y0, r = Math.min(3, w / 2, hh);
+    g += `<path class="${p.qhs < S.ref - 1e-9 ? 'bar under' : 'bar okb'}" d="M${x0},${H - B}V${y0 + r}q0,-${r} ${r},-${r}h${w - 2 * r}q${r},0 ${r},${r}V${H - B}z"><title>${esc(p.destWell + ' · ' + p.code)}: ${Math.round(p.repr * 100)}% da massa de referência</title></path>`; });
+  g += `<line x1="${L}" x2="${W - R}" y1="${y(1)}" y2="${y(1)}" class="refl"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Massa de cada biblioteca no pool em relação à massa de referência">${g}<text x="${(W + L) / 2}" y="${H - 6}" class="tk" text-anchor="middle">bibliotecas em ordem crescente</text><text x="10" y="${(H - B + T) / 2}" class="tk" text-anchor="middle" transform="rotate(-90 10 ${(H - B + T) / 2})">massa no pool</text></svg>
+  <div class="legend"><span><i style="background:var(--m1);border-color:var(--m1)"></i>100% (normalizada)</span><span><i style="background:var(--m4);border-color:var(--m4)"></i>Abaixo de 100%: menos leituras esperadas</span></div>`;
+}
+function renderPool(step) {
+  const S = poolState(step), cfg = S.cfg, P = S.P, s = st(step.id), inc = S.items.filter(i => i.inPool), bad = S.issues.some(i => i[0] === 'bad');
+  let h = `<section class="panel"><div class="panel-h"><h3>${esc(cfg.metodo)} · todas as bibliotecas</h3><span class="hint">${fmtN(cfg.input)} <span class="u">µL</span> de cada biblioteca</span></div>
+    ${lotBanner(step)}${qubitBox(S.kq, inc.length, 'bibliotecas', cfg.input)}
+    <div class="tbl"><table><thead><tr><th>Reagente</th><th>Lote · validade</th></tr></thead><tbody>${stepReagents(step).map(r => `<tr><td>${esc(r.name)}</td><td>${lotCell(step, r.key, r.name)}</td></tr>`).join('')}</tbody></table></div>
+    <span class="label">Leituras (concentração da biblioteca, <span class="u">ng/µL</span>)</span>
+    <div class="qgrid">${S.items.map(i => `<label class="qcell ${i.qhs > 0 ? 'has' : ''} ${i.inPool ? '' : 'off'}"><span class="well-tag">${i.destWell}</span><span class="mono qcode">${esc(i.code)}</span><input class="cell num" id="pv-${esc(slug(i.key))}" data-pv="${esc(i.key)}" value="${i.qhs != null ? fmt(i.qhs, 2) : ''}" inputmode="decimal" placeholder="${i.kind === 'cn' ? 'CN' : 'ng/µL'}" aria-label="Qubit HS ${esc(i.code)}"></label>`).join('')}</div>
+    <details class="importer"><summary>Colar leituras</summary><p class="hint">Uma leitura por linha, na ordem dos poços acima, ou no formato <span class="mono">A1;12,4</span>.</p><textarea id="paste-pv" placeholder="12,4&#10;15,1&#10;…"></textarea><button class="btn small" data-act="pv-paste">Usar leituras coladas</button></details></section>`;
+  h += `<section class="panel"><div class="panel-h"><h3>Referência de normalização</h3><span class="hint">volume = ${fmtN(cfg.vmax)} µL × referência ÷ concentração (máx. ${fmtN(cfg.vmax)} µL por biblioteca)</span></div>
+    <div class="seg refseg" role="group" aria-label="Referência">${Object.entries(POOL_REFS).map(([k, [lab]]) => `<button data-act="pref" data-k="${k}" aria-pressed="${cfg.ref === k}">${lab}<small>${k === 'manual' ? (cfg.manual ? fmtN(cfg.manual) + ' ng/µL' : 'digitar') : S.R[k] != null ? fmtN(roundTo(S.R[k], 2)) + ' ng/µL' : '—'}</small></button>`).join('')}</div>
+    <p class="hint">${esc(POOL_REFS[cfg.ref]?.[1] || '')}. Bibliotecas abaixo da referência entram com ${fmtN(cfg.vmax)} µL e contribuem com menos massa (menos leituras); as demais recebem a mesma massa (${S.ref ? fmtN(roundTo(cfg.vmax * S.ref, 1)) + ' ng' : '—'}).${S.R.outliers ? ` Há ${S.R.outliers} outlier(s) baixo(s) entre as amostras.` : ''}</p>
+    <div class="ctrls">${cfg.ref === 'manual' ? `<label class="field"><span class="label">Referência manual (ng/µL)</span><input id="p-man" class="num" data-pman value="${cfg.manual != null ? fmt(cfg.manual, 2) : ''}" inputmode="decimal"></label>` : ''}
+      ${numField('p-vmax', 'vmax', 'Volume máx. por biblioteca (<span class="u">µL</span>)', cfg.vmax, 1)}${numField('p-minv', 'minPoolVol', 'Volume mínimo do pool (<span class="u">µL</span>)', cfg.minPoolVol, 0)}${numField('p-minc', 'minPoolConc', 'Conc. mínima do pool (<span class="u">ng/µL</span>)', cfg.minPoolConc, 2)}</div>
+    ${S.vals.length >= 3 ? `<div class="charts"><figure><figcaption>Concentração das bibliotecas e referências</figcaption>${stripSvg(S)}</figure><figure><figcaption>Massa de cada biblioteca no pool (100% = referência)</figcaption>${reprSvg(S)}</figure></div>
+    <div class="tbl"><table><thead><tr><th>Referência</th><th class="r"><span class="u">ng/µL</span></th><th class="r">Abaixo dela</th><th class="r">Menor massa</th><th class="r">Pré-diluições</th><th class="r">Soma dos volumes</th><th class="r">Pool final</th><th class="r">Conc. do pool</th><th title="Pool com pelo menos ${fmtN(cfg.minPoolVol)} µL e ${fmtN(cfg.minPoolConc)} ng/µL">Atende?</th></tr></thead><tbody>
+    ${S.compare.map(c => `<tr class="${c.k === cfg.ref ? 'cur' : ''}"><td><button class="btn small ghost" data-act="pref" data-k="${c.k}">${esc(POOL_REFS[c.k][0])}</button></td><td class="r num">${c.ref != null ? fmtN(roundTo(c.ref, 2)) : '—'}</td><td class="r num">${c.under}/${c.n}</td><td class="r num">${c.minRepr != null ? Math.round(c.minRepr * 100) + '%' : '—'}</td><td class="r num">${c.nPre}</td><td class="r num">${fmtN(roundTo(c.sumV, 1))} µL</td><td class="r num">${fmtN(roundTo(c.finalVol, 1))} µL</td><td class="r num">${c.conc != null ? fmtN(roundTo(c.conc, 2)) : '—'}</td><td>${c.ref == null ? '—' : c.ok ? chip(['ok', 'Atende']) : chip(['bad', 'Não atende'])}</td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="empty"><strong>Faltam leituras</strong><span>Os gráficos e a comparação das referências aparecem com 3 ou mais bibliotecas quantificadas.</span></div>'}</section>`;
+  h += `<section class="panel"><div class="panel-h"><h3>Montagem do pool</h3><span class="hint">tubo de 1,5 mL</span></div>
+    <div class="kpis"><div class="kpi"><span class="label">Bibliotecas no pool</span><span class="num">${P.rows.filter(r => r.vol != null).length}</span></div>
+      <div class="kpi"><span class="label">Soma dos volumes</span><span class="num">${fmtN(roundTo(P.sumV, 1))} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">${esc(cfg.diluente)} para completar</span><span class="num">${fmtN(P.te)} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Pool final</span><span class="num">${fmtN(roundTo(P.finalVol, 1))} <span class="u">µL</span></span></div>
+      <div class="kpi"><span class="label">Conc. esperada</span><span class="num">${P.conc != null ? fmtN(roundTo(P.conc, 2)) : '—'} <span class="u">ng/µL</span></span></div></div>
+    ${S.issues.length ? `<div class="banner ${bad ? 'bad' : 'warn'}"><ul class="issues">${S.issues.map(i => `<li>${chip([i[0], i[0] === 'bad' ? 'Resolver' : 'Conferir'])}<span>${esc(i[1])}</span></li>`).join('')}</ul></div>` : (P.rows.some(r => r.vol != null) ? `<div class="banner ok"><span>Pool com ${fmtN(roundTo(P.finalVol, 1))} µL e ${fmtN(roundTo(P.conc, 2))} ng/µL.</span></div>` : '')}
+    ${poolPlate(P)}
+    <div class="tbl"><table><thead><tr><th>No pool</th><th>Poço</th><th>Amostra</th><th>Barcode</th><th>Tipo</th><th class="r">Qubit HS <span class="u">ng/µL</span></th><th class="r">Volume <span class="u">µL</span></th><th class="r">Massa ng</th><th class="r">Massa rel.</th><th>Status</th></tr></thead><tbody>
+    ${P.rows.map(r => `<tr class="${r.kind !== 'sample' ? 'ctl' : ''} ${r.inPool ? '' : 'off'}"><td><input type="checkbox" id="pin-${esc(slug(r.key))}" data-act="p-in" data-k="${esc(r.key)}" ${r.inPool ? 'checked' : ''} aria-label="${esc(r.code)} no pool"></td><td><span class="well-tag">${r.destWell}</span></td><td class="mono">${esc(r.code)}</td><td class="mono">${esc(r.barcode || '—')}</td><td>${chip(KIND[r.kind] || KIND.sample)}</td>
+      <td class="r num">${r.qhs != null ? fmt(r.qhs, 2) : '—'}</td><td class="r num"><b>${r.vol != null ? fmtN(r.vol) + (r.predil ? ` <small>(1:${r.predil})</small>` : '') : '—'}</b></td><td class="r num">${r.mass != null ? fmtN(roundTo(r.mass, 1)) : '—'}</td><td class="r num">${r.repr != null ? Math.round(r.repr * 100) + '%' : '—'}</td><td>${chip(r.status)}</td></tr>`).join('')}
+    </tbody></table></div></section>`;
+  return h;
+}
+function poolPlate(P) {
+  const by = {}; P.rows.forEach(i => by[i.dest || wellIdxName(i.destWell)] = i);
+  if (!P.rows.some(r => r.vol != null)) return '';
+  let h = `<div><span class="label">Volume de cada biblioteca para o pool (<span class="u">µL</span>)</span><div class="plate" style="margin-top:6px"><div class="grid"><span></span>${Array.from({ length: 12 }, (_, i) => `<span class="hd">${i + 1}</span>`).join('')}`;
+  for (let r = 0; r < 8; r++) { h += `<span class="hd">${'ABCDEFGH'[r]}</span>`;
+    for (let c = 0; c < 12; c++) { const w = by[c * 8 + r + 1];
+      h += w ? `<div class="well fill qw ${w.status[0] === 'warn' ? 'qwarn' : 'okw'} ${!w.inPool ? 'medn' : ''}" title="${esc(w.destWell + ' · ' + w.code + ' · ' + w.status[1])}"><span class="lc">${esc(w.barcode || w.code.split('_')[0].slice(-4))}</span><span class="qv">${w.vol != null ? fmtN(w.vol) : '—'}</span><span class="qd">${w.predil ? '1:' + w.predil : ''}</span></div>` : '<div class="well"></div>'; } }
+  return h + `</div></div><div class="legend"><span><i style="border-color:var(--m1)"></i>Normalizada</span><span><i style="border-color:var(--warn);border-width:2px"></i>Abaixo da referência ou pré-diluição</span><span><i style="border-color:var(--line);border-style:dashed"></i>Fora do pool</span></div></div>`;
+}
+/* ---------- pós-PCR: quantificação final do pool ---------- */
+function poolqcState(step) {
+  const s = st(step.id), c = step.config || {}, conc = s.fq ?? null, bp = s.overrides.bp ?? (+c.tamanhoMedioPb || null), target = +c.alvoNm || 4;
+  const nM = conc > 0 && bp > 0 ? conc / (660 * bp) * 1e6 : null;
+  const kq = qubitCalc(1, c.qubit, +c.volumeInput || 1);
+  return { c, conc, bp, target, nM, factor: nM ? nM / target : null, metodo: c.metodo || 'Qubit dsDNA HS', input: +c.volumeInput || 1, kq,
+    vars: { metodo: c.metodo || 'Qubit dsDNA HS', input: +c.volumeInput || 1, reagenteQubit: (c.reagentes || {}).kit || 'Qubit dsDNA HS Assay Kit',
+      trabalhoTotal: mlTxt(kq.ws), trabalhoReagente: mlTxt(kq.reagent), trabalhoTampao: mlTxt(kq.buffer), tubosQubit: kq.n, volTrabalhoAmostra: kq.sampleWs, volTrabalhoPadrao: kq.stdWs, volPadrao: kq.Q.volumePadrao, ...(c.tempos || {}) } };
+}
+function renderPoolqc(step) {
+  const F = poolqcState(step), prev = proto().steps.slice(0, stepIndex(step.id)).reverse().find(x => x.type === 'pool'), PS = prev ? poolState(prev) : null;
+  let h = `<section class="panel"><div class="panel-h"><h3>${esc(F.metodo)} · pool final</h3><span class="hint">${fmtN(F.input)} <span class="u">µL</span> do pool purificado</span></div>
+    ${lotBanner(step)}${qubitBox(F.kq, 1, 'pool', F.input)}
+    <div class="tbl"><table><thead><tr><th>Reagente</th><th>Lote · validade</th></tr></thead><tbody>${stepReagents(step).map(r => `<tr><td>${esc(r.name)}</td><td>${lotCell(step, r.key, r.name)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="ctrls"><label class="field"><span class="label">Concentração do pool final (<span class="u">ng/µL</span>)</span><input id="fq" class="num" data-fq value="${F.conc != null ? fmt(F.conc, 2) : ''}" inputmode="decimal"></label>
+      ${numField('fq-bp', 'bp', 'Tamanho médio da biblioteca (pb, opcional)', F.bp ?? 0, 0)}</div>
+    <div class="kpis"><div class="kpi"><span class="label">Pool final</span><span class="num">${F.conc != null ? fmtN(F.conc) : '—'} <span class="u">ng/µL</span></span></div>
+      ${PS && PS.P.conc ? `<div class="kpi"><span class="label">Antes da purificação</span><span class="num">${fmtN(roundTo(PS.P.conc, 2))} <span class="u">ng/µL</span></span></div>` : ''}
+      <div class="kpi"><span class="label">Molaridade</span><span class="num">${F.nM ? fmtN(roundTo(F.nM, 2)) + ' <span class="u">nM</span>' : '—'}</span></div>
+      ${F.factor ? `<div class="kpi"><span class="label">Diluição para ${fmtN(F.target)} <span class="u">nM</span></span><span class="num">${F.factor >= 1 ? '1:' + fmtN(roundTo(F.factor, 2)) : 'abaixo do alvo'}</span></div>` : ''}</div>
+    <p class="hint">Molaridade (nM) = ng/µL ÷ (660 × pb) × 10⁶. Informe o tamanho médio (por exemplo, do TapeStation/Bioanalyzer) para o app calcular.</p>
+    ${F.conc != null ? '<div class="banner ok"><span>Fim do pós-PCR: baixe o registro da biblioteca abaixo (amostras, barcodes, quantificações, volumes do pool).</span></div>' : ''}</section>`;
+  return h;
+}
+function libraryRecord() {
+  const P = proto(), steps = P.steps, by = t => steps.filter(x => x.type === t);
+  const h = steps.find(x => x.type === 'handoff'), pool = by('pool')[0], bc = by('barcode')[0], q = by('quant')[0], fq = by('poolqc')[0];
+  const PS = pool ? poolState(pool) : null, QS = q ? quantState(q) : null, B = bc ? bcState(bc) : null, F = fq ? poolqcState(fq) : null;
+  const mapK = (list, f) => Object.fromEntries((list || []).map(i => [i.key, f(i)]));
+  const qm = mapK(QS?.items, i => i), bm = mapK(B?.items, i => i), pm = mapK(PS?.P.rows, i => i);
+  return { schema: 'bancada-ngs/biblioteca', version: 1, generatedAt: new Date().toISOString(),
+    protocol: { id: P.id, name: P.name, version: P.version || '' }, round: { name: run.meta.name, operator: run.meta.operator, date: run.meta.date },
+    batches: (h ? st(h.id).pkgs || [] : []).map(p => ({ batch: p.pkg.run?.batch, generatedAt: p.pkg.generatedAt, wells: (p.pkg.plate?.wells || []).length })),
+    pool: PS ? { reference: PS.cfg.ref, referenceConc: rnd(PS.ref), maxVol: PS.cfg.vmax, sumVol: rnd(PS.P.sumV), lowTE: PS.P.te, finalVol: rnd(PS.P.finalVol), expectedConc: rnd(PS.P.conc) } : null,
+    finalPool: F ? { conc: F.conc, sizeBp: F.bp || null, nM: rnd(F.nM) } : null,
+    reagents: steps.flatMap(x => stepReagents(x).length ? lotStatus(x).list.map(l => ({ step: x.id, ...l })) : []),
+    wells: (h ? pkgState(h)?.rows || [] : []).map(r => { const k = rk(r), qq = qm[k], b = bm[k], p = pm[k];
+      return { well: r.destWell, code: r.code, il: r.id, type: r.kind, source: { batch: r.srcBatch, well: r.srcWell },
+        dnaConc: r.stockConc ?? null, ampliconQubit: qq?.qubit ?? null, normalization: qq ? { base: qq.base === 'medido' ? 'calculado' : qq.base, ampliconVol: qq.vAmp, diluentVol: qq.vDil } : null,
+        barcode: b && b.ok ? { plate: b.plate, well: b.well, id: bcId(b.plate, b.well) } : null,
+        library: p ? { qubitHS: p.qhs, inPool: p.inPool, poolVol: p.vol, predilution: p.predil || null, relMass: p.repr != null ? rnd(p.repr) : null } : null }; }),
+    steps: steps.map(x => ({ id: x.id, name: x.name, done: checkCount(x), total: procItems(x).length })) };
+}
 /* cronômetro dos passos do checklist (incubações, esperas) */
 const TIMERS = {};
 function timerSeconds(step, it) {
@@ -1310,6 +1521,8 @@ function renderTypeBody(step) {
   if (step.type === 'cleanup') return renderCleanup(step);
   if (step.type === 'quant') return renderQuant(step);
   if (step.type === 'barcode') return renderBarcode(step);
+  if (step.type === 'pool') return renderPool(step);
+  if (step.type === 'poolqc') return renderPoolqc(step);
   return '';
 }
 const NORM_KEYS = ['mode', 'target', 'finalVol', 'minVolAuto', 'dilDeadVol', 'prepVol', 'minVolBench', 'maxVol', 'allowBelow', 'autoAdjust', 'manualAtEnd'];
@@ -1477,6 +1690,8 @@ function stepReagents(step) {
     ...bcState(step).plates.map(p => ({ key: 'bc:' + p, name: `${bcCfg(step).name} placa ${p}`, mix: 'barcodes' }))];
   if (step.type === 'mastermix') return step.config.mixes.flatMap(x => x.components.map(k => ({ key: x.name + '::' + k.name, name: k.name, mix: x.name })));
   if (step.type === 'cleanup') return cleanupState(step).reagents.map(r => ({ key: r.key, name: r.name, mix: step.config.nome || step.name }));
+  if (step.type === 'pool') { const c = poolCfg(step); return [{ key: 'kit', name: c.reagentes.kit, mix: c.metodo }, { key: 'diluente', name: c.diluente, mix: 'pool' }]; }
+  if (step.type === 'poolqc') return [{ key: 'kit', name: (step.config.reagentes || {}).kit || 'Qubit dsDNA HS Assay Kit', mix: 'pool final' }];
   if (step.type === 'quant') { const q = quantCfg(step); return [{ key: 'kit', name: q.reagentes.kit, mix: q.metodo }, { key: 'diluente', name: q.diluente, mix: 'diluição' }]; }
   return [];
 }
@@ -1572,6 +1787,7 @@ function csvFor(step) {
     case 'normalize': return toCSV(out, [['Poco','destWell'], ...base, ['Estoque', r => r.source === 'stock' ? plateKey(r) + ' ' + r.row + r.col : SOURCE[r.source]], ['ng/uL','conc'], ['DNA (uL)','vDNA'], ['Diluente (uL)','vDil'], ['Preparado (uL)','vPrep'], ['Status', r => r.status[1]]]);
     case 'mastermix': { const m = mmState(step), rows = []; m.mixes.forEach(x => x.components.forEach(k => rows.push({ mix: x.name, comp: k.name, vol: k.vol, total: k.total }))); return toCSV(rows, [['Master mix','mix'],['Componente','comp'],['uL/reacao','vol'],[`Total (${m.nRx} rx +${m.overage}%)`,'total']]); }
     case 'plate': return toCSV(plateItems(step), [['Poco','destWell'], ...base]);
+    case 'pool': return toCSV(poolState(step).P.rows, [['Poco','destWell'], ...base, ['Barcode', r => r.barcode || ''], ['Qubit HS ng/uL','qhs'], ['No pool', r => r.inPool ? 'sim' : 'nao'], ['Volume (uL)','vol'], ['Pre-diluicao', r => r.predil ? '1:' + r.predil : ''], ['Massa (ng)', r => r.mass != null ? roundTo(r.mass, 2) : ''], ['Massa relativa', r => r.repr != null ? roundTo(r.repr, 3) : ''], ['Status', r => r.status[1]]]);
     case 'barcode': return toCSV(bcState(step).items, [['Poco','destWell'], ...base, ['Placa barcode', r => r.ok ? r.plate : ''], ['Poco barcode', r => r.ok ? r.well : ''], ['Barcode', r => r.ok ? bcId(r.plate, r.well) : '']]);
     case 'quant': return toCSV(quantState(step).items, [['Poco','destWell'], ...base, ['DNA inicial ng/uL','stockConc'], ['Quantificado', r => r.sel ? 'sim' : 'nao'], ['Amplicon ng/uL','qubit'], ['Calculado (uL)', r => r.calc ? r.calc.vAmp : ''], ['Usou calculado', r => r.calc ? (r.used ? 'sim' : 'nao') : ''], ['Base', r => r.base === 'medido' ? 'calculado' : r.base], ['Amplicon (uL)','vAmp'], ['Pre-diluicao', r => r.predil ? '1:' + r.predil : ''], ['Diluente (uL)','vDil'], ['Massa (ng)', r => r.mass != null ? roundTo(r.mass, 1) : ''], ['Status', r => r.status[1]]]);
     default: return toCSV(out, [['Amostra','id']]);
@@ -1744,6 +1960,14 @@ document.addEventListener('click', async e => {
       if (!w) { toast('Poço inicial inválido: use A1 a H12'); break; }
       s.bcStart = { plate, well: w, skip }; const r = bcAutofill(step, plate, w, skip); render();
       toast(r.n < r.total ? `${r.n} de ${r.total} amplicons receberam barcode: acabaram as placas` : `${r.n} barcodes associados`); break; }
+    case 'pref': s.pref = el.dataset.k; render(); break;
+    case 'p-in': { const k = el.dataset.k; (s.pexcl ||= {})[k] = !el.checked; render(); break; }
+    case 'pv-paste': { const S = poolState(step), lines = $('#paste-pv').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean); let n = 0; s.pv ||= {};
+      lines.forEach((ln, i) => { const m = ln.match(/^([A-H])\s*0?(\d{1,2})\s*[;\t, ]\s*(\d+(?:[.,]\d+)?)/i);
+        if (m) { const it = S.items.find(x => x.destWell === m[1].toUpperCase() + (+m[2])); if (it) { s.pv[it.key] = numBR(m[3]); n++; } }
+        else { const v = numBR((ln.match(/\d+(?:[.,]\d+)?/) || [])[0]); if (v != null && S.items[i]) { s.pv[S.items[i].key] = v; n++; } } });
+      render(); toast(`${n} leitura(s) registrada(s)`); break; }
+    case 'lib-record': saveFile(`${slug(run.meta.name) || 'biblioteca'}_biblioteca.json`, JSON.stringify(libraryRecord(), null, 2)); break;
     case 'bc-clear': s.bc = {}; render(); break;
     case 'q-use': { const k = el.dataset.k; (s.quse ||= {})[k] = el.checked; render(); break; }
     case 'q-use-all': { const Q = quantState(step); s.quse ||= {}; Q.items.filter(i => i.calc).forEach(i => s.quse[i.key] = el.dataset.v === '1'); render(); break; }
@@ -1841,6 +2065,9 @@ document.addEventListener('change', async e => {
     if (el.dataset.bcp != null) a.plate = el.value; else { const w = bcNorm(el.value); a.well = w || el.value.trim().toUpperCase(); if (!w && el.value.trim()) toast('Poço inválido: use A1 a H12'); }
     a.edited = true; save(); setTimeout(() => { const id = document.activeElement?.id; render(); if (id) document.getElementById(id)?.focus(); }, 0); return; }
   if (el.id === 'bc-plate' || el.id === 'bc-skip') { s.bcStart = { ...(s.bcStart || {}), plate: $('#bc-plate').value, well: bcNorm($('#bc-well').value) || 'A1', skip: $('#bc-skip').checked }; save(); return; }
+  if (el.dataset.pv != null || el.dataset.pman != null || el.dataset.fq != null) { const raw = el.value.trim(), v = raw === '' ? null : numBR(raw); if (raw !== '' && (v == null || v < 0)) { toast('Valor inválido'); return; }
+    if (el.dataset.pv != null) (s.pv ||= {})[el.dataset.pv] = v; else if (el.dataset.pman != null) s.pman = v; else s.fq = v;
+    save(); setTimeout(() => { const id = document.activeElement?.id; render(); if (id) document.getElementById(id)?.focus(); }, 0); return; }
   if (el.dataset.qv != null) { const v = el.value.trim() === '' ? null : numBR(el.value); if (el.value.trim() !== '' && (v == null || v < 0)) { toast('Valor inválido'); return; }
     (s.qv ||= {})[el.dataset.qv] = v; save(); setTimeout(() => { const id = document.activeElement?.id; render(); if (id) document.getElementById(id)?.focus(); }, 0); return; }
   if (el.dataset.ov) { const v = numBR(el.value); if (v == null || v < 0) { toast('Valor inválido'); render(); return; } s.overrides[el.dataset.ov] = v; render(); return; }
@@ -1870,7 +2097,7 @@ document.addEventListener('change', async e => {
 document.addEventListener('keydown', e => {   // Enter nas leituras do Qubit: vai para o próximo poço
   const el = e.target; if (e.key !== 'Enter') return;
   if (el.id === 'bc-well') { e.preventDefault(); document.querySelector('[data-act="bc-fill"]')?.click(); return; }
-  const attr = el.dataset?.qv != null ? 'data-qv' : el.dataset?.bcw != null ? 'data-bcw' : null; if (!attr) return; e.preventDefault();
+  const attr = el.dataset?.qv != null ? 'data-qv' : el.dataset?.bcw != null ? 'data-bcw' : el.dataset?.pv != null ? 'data-pv' : null; if (!attr) return; e.preventDefault();
   const all = [...document.querySelectorAll('[' + attr + ']')], nx = all[all.indexOf(el) + 1]; if (nx) nx.focus(); else el.blur();
 });
 document.addEventListener('input', e => {

@@ -46,7 +46,8 @@
       "descricao": "Master mix do kit selecionado. O número de reações vem da bateria (amostras + controles) mais o excedente.",
       "checklist": [
         "Trabalhar em cabine limpa, com UV prévio, na área pré-PCR.",
-        "Descongelar tampão, dNTP e primers em gelo; manter a polimerase a −20 °C até o uso.",
+        { "texto": "Manter a polimerase no freezer (−20 °C) até o momento do uso; ao retirar, manter no gelo.", "icone": "gelo" },
+        { "texto": "Descongelar os demais reagentes em temperatura ambiente. Depois de descongelados, vortexar, dar spin rápido e manter no gelo até o uso.", "icone": "gelo" },
         "Montar o master mix: água primeiro, polimerase por último.",
         "Homogeneizar por pipetagem suave e centrifugar brevemente.",
         { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" }

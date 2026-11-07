@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "03/11/2026",
+  "atualizadoEm": "04/11/2026",
   "descricao": "Estrutura comum a todos os protocolos pós-PCR. Volumes, proporções e tempos vêm de kits.json (seção posPcr do kit). Textos entre chaves, como {beads}, são preenchidos com os valores do kit.",
   "etapas": [
     {
@@ -81,14 +81,15 @@
       "descricao": "Preparo e dispensação do mix de fragmentação sobre os amplicons normalizados. Reagentes e placa no gelo durante toda a manipulação.",
       "checklist": [
         { "texto": "Colocar a placa com os amplicons normalizados no gelo e mantê-la no gelo durante toda a manipulação.", "icone": "gelo", "alerta": true },
-        { "texto": "Manter {reagente1} e {reagente2} no gelo.", "icone": "gelo" },
+        { "texto": "Manter {reagenteEnzimas} no freezer (−20 °C) até o momento do uso; ao retirar, manter no gelo.", "icone": "gelo" },
+        { "texto": "Descongelar os demais reagentes em temperatura ambiente. Depois de descongelados, vortexar, dar spin rápido e manter no gelo até o uso.", "icone": "gelo" },
         { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
         { "texto": "Preparar o mix em microtubo no gelo, nos volumes da tabela.", "icone": "gelo" },
         { "texto": "O mix é viscoso: homogeneizar bem por pipetagem lenta, sem formar bolhas.", "alerta": true },
         { "texto": "Dispensar {mixPorPoco} µL do mix em cada poço com {amostra} µL de amplicon normalizado.", "icone": "gelo" },
         { "texto": "Homogeneizar bem por pipetagem em cada poço (mix viscoso).", "alerta": true },
         { "texto": "Selar a placa, dar spin brando e manter no gelo.", "icone": "gelo" },
-        { "texto": "Levar a placa ao termociclador e rodar o programa de fragmentação do kit." }
+        { "texto": "Levar a placa ao termociclador e rodar o programa de fragmentação (tabela acima)." }
       ]
     },
     {
@@ -102,14 +103,172 @@
         { "texto": "Cada amplicon com um barcode, sem repetição de placa + poço", "auto": "bc-ok" },
         { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
         { "texto": "Retirar a placa fragmentada do termociclador e dar spin brando." },
-        { "texto": "Manter {reagenteEnzimas} no gelo até o uso.", "icone": "gelo" },
+        { "texto": "Manter {reagenteEnzimas} no freezer (−20 °C) até o momento do uso; ao retirar, manter no gelo.", "icone": "gelo" },
+        { "texto": "Descongelar os demais reagentes em temperatura ambiente. Depois de descongelados, vortexar, dar spin rápido e manter no gelo até o uso.", "icone": "gelo" },
         "Descongelar as placas de barcode indicadas, dar spin e remover o selo só das colunas que serão usadas.",
         "Preparar o mix de ligação (sem o barcode) nos volumes da tabela; homogeneizar por pipetagem e dar spin.",
         "Dispensar {mixPorPoco} µL do mix em cada poço com amplicon fragmentado.",
         { "texto": "Adicionar {barcodeVol} µL do barcode indicado na tabela em cada poço, trocando a ponteira a cada poço.", "alerta": true },
         "Conferir a placa de barcode e o poço antes de cada transferência.",
         "Homogeneizar por pipetagem, selar a placa e dar spin brando.",
+        { "texto": "Levar a placa ao termociclador e rodar o programa de ligação (tabela acima)." },
         "Selar novamente as placas de barcode e devolvê-las ao freezer."
+      ]
+    },
+    {
+      "id": "selecao-tamanho",
+      "nome": "Seleção de tamanho",
+      "area": "pos-pcr",
+      "tipo": "cleanup",
+      "parametros": "selecaoTamanho",
+      "descricao": "Seleção de tamanho com beads em duas etapas: seleção negativa (as beads retêm os fragmentos grandes; o sobrenadante segue para a placa 2) e seleção positiva (as beads retêm os fragmentos desejados), seguida de duas lavagens com etanol 75% e eluição em Low TE.",
+      "checklist": [
+        { "texto": "Retirar as beads ({reagenteBeads}) da geladeira e deixar em temperatura ambiente por {ambientarBeadsMin} min.", "timer": "ambientarBeadsMin" },
+        "Preparar o etanol {etanolPct}% fresco: {etanolAgua} de água livre de nuclease + {etanolAbs} de {reagenteEtanol} ({etanolTotal}, margem de {etanolMargem}%).",
+        { "texto": "Lotes e validades dos reagentes registrados, nenhum vencido", "auto": "lots-ok" },
+        "Retirar a placa do termociclador e dar spin brando.",
+        "Homogeneizar bem as beads e adicionar {beadsNeg} µL a cada poço (seleção negativa); homogeneizar por pipetagem.",
+        { "texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin" },
+        { "texto": "Colocar a placa 1 na rack magnética até separar as beads.", "icone": "magneto" },
+        { "texto": "Transferir {transfSelecao} µL do sobrenadante para os mesmos poços de uma placa nova (placa 2). As beads da placa 1 são descartadas.", "icone": "magneto", "alerta": true },
+        "Adicionar {beadsPos} µL de beads a cada poço da placa 2 (seleção positiva); homogeneizar por pipetagem.",
+        { "texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin" },
+        { "texto": "Colocar a placa 2 na rack magnética até separar as beads.", "icone": "magneto" },
+        { "texto": "Aspirar e descartar {descarteSelecao} µL do sobrenadante sem tocar nas beads.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}%.", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Retirar o etanol residual com ponteira de 10 µL.", "icone": "magneto" },
+        "Retirar da rack magnética e deixar o etanol residual evaporar.",
+        { "texto": "Não deixar as beads secarem demais.", "alerta": true },
+        "Adicionar {eluicao} µL de {reagenteEluicao} e homogeneizar por pipetagem até dissolver o pellet de beads.",
+        { "texto": "Incubar {eluicaoMin} min em temperatura ambiente.", "timer": "eluicaoMin" },
+        { "texto": "Voltar para a rack magnética e aguardar a separação das beads.", "icone": "magneto" },
+        { "texto": "Transferir {transferencia} µL do eluído para uma placa nova (placa 3), nas mesmas posições.", "icone": "magneto" }
+      ]
+    },
+    {
+      "id": "amplificacao-secundaria",
+      "nome": "Amplificação secundária",
+      "area": "pos-pcr",
+      "tipo": "mix",
+      "parametros": "mixAmplificacao",
+      "descricao": "Master mix de amplificação das bibliotecas com barcode e tamanho selecionado.",
+      "checklist": [
+        { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
+        { "texto": "Descongelar os demais reagentes em temperatura ambiente. Depois de descongelados, vortexar, dar spin rápido e manter no gelo até o uso.", "icone": "gelo" },
+        "Preparar o mix de amplificação nos volumes da tabela; homogeneizar por pipetagem e dar spin.",
+        "Dispensar {mixPorPoco} µL do mix em cada poço com {amostra} µL de biblioteca.",
+        "Homogeneizar por pipetagem, selar a placa e dar spin brando.",
+        "Levar ao termociclador e rodar o programa de amplificação secundária (tabela acima)."
+      ]
+    },
+    {
+      "id": "purificacao-biblioteca",
+      "nome": "Purificação da biblioteca",
+      "area": "pos-pcr",
+      "tipo": "cleanup",
+      "parametros": "limpezaBiblioteca",
+      "descricao": "Purificação com beads na razão 1:1, sem seleção de tamanho, como na primeira purificação.",
+      "checklist": [
+        { "texto": "Retirar as beads ({reagenteBeads}) da geladeira e deixar em temperatura ambiente por {ambientarBeadsMin} min.", "timer": "ambientarBeadsMin" },
+        "Preparar o etanol {etanolPct}% fresco: {etanolAgua} de água livre de nuclease + {etanolAbs} de {reagenteEtanol} ({etanolTotal}, margem de {etanolMargem}%).",
+        { "texto": "Lotes e validades dos reagentes registrados, nenhum vencido", "auto": "lots-ok" },
+        "Retirar a placa do termociclador e dar spin brando.",
+        "Homogeneizar bem as beads e adicionar {beads} µL a cada poço com {amostra} µL de biblioteca ({razao}×); homogeneizar por pipetagem.",
+        { "texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin" },
+        { "texto": "Colocar a placa na rack magnética até separar as beads.", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante sem tocar nas beads.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}%.", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Retirar o etanol residual com ponteira de 10 µL.", "icone": "magneto" },
+        "Retirar da rack magnética e deixar o etanol residual evaporar.",
+        { "texto": "Não deixar as beads secarem demais.", "alerta": true },
+        "Adicionar {eluicao} µL de {reagenteEluicao} e homogeneizar por pipetagem até dissolver o pellet de beads.",
+        { "texto": "Incubar {eluicaoMin} min em temperatura ambiente.", "timer": "eluicaoMin" },
+        { "texto": "Voltar para a rack magnética e aguardar a separação das beads.", "icone": "magneto" },
+        { "texto": "Transferir {transferencia} µL do eluído para uma placa nova, nas mesmas posições.", "icone": "magneto" }
+      ]
+    },
+    {
+      "id": "pool-equimolar",
+      "nome": "Quantificação e pool equimolar",
+      "area": "pos-pcr",
+      "tipo": "pool",
+      "parametros": "pool",
+      "descricao": "Quantificação de todas as bibliotecas no Qubit HS e montagem do pool equimolar em tubo de 1,5 mL, com volumes proporcionais à concentração de referência.",
+      "checklist": [
+        { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
+        "Deixar os padrões e o {reagenteQubit} em temperatura ambiente antes de usar.",
+        "Preparar a solução de trabalho: {trabalhoReagente} de reagente + {trabalhoTampao} de tampão ({trabalhoTotal} para {tubosQubit} tubos), protegida da luz.",
+        "Padrões: {volTrabalhoPadrao} µL de solução de trabalho + {volPadrao} µL de cada padrão.",
+        "Amostras: {volTrabalhoAmostra} µL de solução de trabalho + {input} µL de cada biblioteca purificada.",
+        "Homogeneizar no vórtex por 2–3 s e dar spin rápido.",
+        { "texto": "Incubar {incubacaoMin} min em temperatura ambiente, protegido da luz.", "timer": "incubacaoMin" },
+        "Ler os padrões e as amostras no Qubit (volume de amostra: {input} µL).",
+        { "texto": "Todas as bibliotecas do pool quantificadas", "auto": "pool-read" },
+        { "texto": "Referência escolhida e pool com volume e concentração mínimos", "auto": "pool-ok" },
+        "Pré-diluir em Low TE as bibliotecas indicadas na tabela.",
+        "Pipetar no tubo de 1,5 mL o volume indicado de cada biblioteca, trocando a ponteira a cada uma.",
+        "Completar com {lowTE} µL de {diluente} (pool de {volumePool} µL).",
+        "Homogeneizar por pipetagem e dar spin rápido."
+      ]
+    },
+    {
+      "id": "purificacao-pool",
+      "nome": "Purificação do pool",
+      "area": "pos-pcr",
+      "tipo": "cleanup",
+      "parametros": "limpezaPool",
+      "descricao": "Uma purificação do pool consolidado com beads, em tubo: mesmos tempos e número de lavagens das purificações anteriores.",
+      "checklist": [
+        { "texto": "Retirar as beads ({reagenteBeads}) da geladeira e deixar em temperatura ambiente por {ambientarBeadsMin} min.", "timer": "ambientarBeadsMin" },
+        "Preparar o etanol {etanolPct}% fresco: {etanolAgua} de água livre de nuclease + {etanolAbs} de {reagenteEtanol} ({etanolTotal}, margem de {etanolMargem}%).",
+        { "texto": "Lotes e validades dos reagentes registrados, nenhum vencido", "auto": "lots-ok" },
+        "Homogeneizar bem as beads e adicionar {beads} µL a {amostra} µL do pool consolidado, em tubo de 1,5 mL; homogeneizar por pipetagem.",
+        { "texto": "Incubar {ligacaoMin} min em temperatura ambiente.", "timer": "ligacaoMin" },
+        { "texto": "Colocar o tubo na rack magnética para microtubos até separar as beads.", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante sem tocar nas beads.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}%.", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Adicionar {etanol} µL de etanol {etanolPct}% (2ª lavagem).", "icone": "magneto" },
+        { "texto": "Aguardar {etanolSeg} s.", "timer": "etanolSeg", "icone": "magneto" },
+        { "texto": "Aspirar e descartar o sobrenadante.", "icone": "magneto" },
+        { "texto": "Retirar o etanol residual com ponteira de 10 µL.", "icone": "magneto" },
+        "Retirar da rack magnética e deixar o etanol residual evaporar.",
+        { "texto": "Não deixar as beads secarem demais.", "alerta": true },
+        "Adicionar {eluicao} µL de {reagenteEluicao} e homogeneizar por pipetagem até dissolver o pellet de beads.",
+        { "texto": "Incubar {eluicaoMin} min em temperatura ambiente.", "timer": "eluicaoMin" },
+        { "texto": "Voltar para a rack magnética e aguardar a separação das beads.", "icone": "magneto" },
+        { "texto": "Recuperar {transferencia} µL do eluído para um tubo novo identificado (pool final).", "icone": "magneto" }
+      ]
+    },
+    {
+      "id": "pool-final",
+      "nome": "Quantificação do pool final",
+      "area": "pos-pcr",
+      "tipo": "poolqc",
+      "parametros": "poolFinal",
+      "descricao": "Quantificação do pool purificado no Qubit HS. Fim do preparo da biblioteca.",
+      "checklist": [
+        { "texto": "Lotes e validades registrados, nenhum vencido", "auto": "lots-ok" },
+        "Deixar os padrões e o {reagenteQubit} em temperatura ambiente antes de usar.",
+        "Preparar a solução de trabalho: {trabalhoReagente} de reagente + {trabalhoTampao} de tampão ({trabalhoTotal} para {tubosQubit} tubos), protegida da luz.",
+        "Padrões: {volTrabalhoPadrao} µL de solução de trabalho + {volPadrao} µL de cada padrão.",
+        "Amostras: {volTrabalhoAmostra} µL de solução de trabalho + {input} µL de pool final.",
+        "Homogeneizar no vórtex por 2–3 s e dar spin rápido.",
+        { "texto": "Incubar {incubacaoMin} min em temperatura ambiente, protegido da luz.", "timer": "incubacaoMin" },
+        "Ler os padrões e as amostras no Qubit (volume de amostra: {input} µL).",
+        { "texto": "Concentração do pool final registrada", "auto": "poolqc-read" },
+        "Identificar o tubo do pool final (rodada, data, concentração) e armazenar."
       ]
     }
   ]

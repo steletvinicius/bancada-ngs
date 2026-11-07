@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "03/11/2026",
+  "atualizadoEm": "04/11/2026",
   "kits": [
     {
       "id": "alltype-ngs-11-loci-meia",
@@ -30,7 +30,7 @@
         "nome": "Alltype multiplex",
         "volumeReacao": 10,
         "volumeDNA": 4.3,
-        "excedentePercentual": 10,
+        "excedentePercentual": 15,
         "reagentes": [
           { "nome": "Alltype Buffer", "volumePorAmostra": 2 },
           { "nome": "AllType dNTP", "volumePorAmostra": 0.8 },
@@ -69,7 +69,7 @@
             "ambientarBeadsMin": 30,
             "ligacaoMin": 5,
             "etanolSeg": 30,
-            "eluicaoMin": 2
+            "eluicaoMin": 1
           },
           "excedenteEtanolPercentual": 20
         },
@@ -103,7 +103,7 @@
         "mixFragmentacao": {
           "nome": "Mix de fragmentação",
           "volumeAmostra": 17.5,
-          "excedentePercentual": 10,
+          "excedentePercentual": 15,
           "reagentes": [
             { "nome": "AllType Fragmentase", "volumePorAmostra": 4.5 },
             { "nome": "AllType Fragmentation Buffer", "volumePorAmostra": 2.5 }
@@ -111,12 +111,17 @@
           "avisos": [
             "Mix viscoso: homogeneizar bem por pipetagem no preparo e na dispensação.",
             "Reagentes e placa no gelo durante toda a manipulação."
+          ],
+          "termociclagem": [
+            { "etapa": "Etapa 1", "temperatura": "37 °C", "tempo": "6 min", "ciclos": "1" },
+            { "etapa": "Etapa 2", "temperatura": "70 °C", "tempo": "10 min", "ciclos": "1" },
+            { "etapa": "Etapa 3", "temperatura": "4 °C", "tempo": "∞", "ciclos": "1" }
           ]
         },
         "mixLigacao": {
           "nome": "Mix de ligação",
           "volumeAmostra": 24.5,
-          "excedentePercentual": 10,
+          "excedentePercentual": 15,
           "reagentes": [
             { "nome": "Água Ultrapura", "volumePorAmostra": 12.5 },
             { "nome": "Alltype Ligase buffer", "volumePorAmostra": 5.0 },
@@ -133,6 +138,148 @@
               "03",
               "04"
             ]
+          },
+          "termociclagem": [
+            { "etapa": "Etapa 1", "temperatura": "25 °C", "tempo": "15 min", "ciclos": "1" },
+            { "etapa": "Etapa 2", "temperatura": "72 °C", "tempo": "5 min", "ciclos": "1" },
+            { "etapa": "Etapa 3", "temperatura": "4 °C", "tempo": "∞", "ciclos": "1" }
+          ]
+        },
+        "selecaoTamanho": {
+          "nome": "Seleção de tamanho (beads em duas etapas)",
+          "volumeAmostra": 50,
+          "selecao": {
+            "volumeBeadsNegativa": 24.25,
+            "volumeTransferencia1": 65.0,
+            "volumeBeadsPositiva": 7.28,
+            "volumeDescarte": 70.0
+          },
+          "volumeEtanol": 50,
+          "lavagensEtanol": 2,
+          "etanolPercentual": 75,
+          "volumeEluicao": 13.5,
+          "volumeTransferencia": 12.5,
+          "excedentePercentual": 10,
+          "excedenteEtanolPercentual": 20,
+          "reagentes": {
+            "beads": "AMPure XP beads",
+            "etanol": "Etanol absoluto",
+            "eluicao": "Low TE"
+          },
+          "tempos": {
+            "ambientarBeadsMin": 30,
+            "ligacaoMin": 5,
+            "etanolSeg": 30,
+            "eluicaoMin": 1
+          }
+        },
+        "mixAmplificacao": {
+          "nome": "Mix de amplificação secundária",
+          "volumeAmostra": 12.5,
+          "textoAmostra": "Biblioteca com tamanho selecionado",
+          "excedentePercentual": 15,
+          "reagentes": [
+            { "nome": "AllType Library Amp Master Mix", "volumePorAmostra": 35.7 },
+            { "nome": "AllType Library Amp Primer Mix", "volumePorAmostra": 1.8 }
+          ],
+          "termociclagem": [
+            { "etapa": "Etapa 1", "temperatura": "95 °C", "tempo": "5 min", "ciclos": "1" },
+            { "etapa": "Etapa 2 · desnaturação", "temperatura": "95 °C", "tempo": "15 s", "ciclos": "8" },
+            { "etapa": "Etapa 2 · anelamento", "temperatura": "58 °C", "tempo": "15 s", "ciclos": "" },
+            { "etapa": "Etapa 2 · extensão", "temperatura": "70 °C", "tempo": "1 min", "ciclos": "" },
+            { "etapa": "Etapa 3", "temperatura": "4 °C", "tempo": "∞", "ciclos": "1" }
+          ]
+        },
+        "limpezaBiblioteca": {
+          "nome": "Purificação da biblioteca 1:1",
+          "volumeAmostra": 50,
+          "volumeBeads": 50,
+          "razaoBeads": 1,
+          "volumeEtanol": 50,
+          "lavagensEtanol": 2,
+          "etanolPercentual": 75,
+          "volumeEluicao": 13.5,
+          "volumeTransferencia": 12.5,
+          "excedentePercentual": 10,
+          "excedenteEtanolPercentual": 20,
+          "reagentes": {
+            "beads": "AMPure XP beads",
+            "etanol": "Etanol absoluto",
+            "eluicao": "Low TE"
+          },
+          "tempos": {
+            "ambientarBeadsMin": 30,
+            "ligacaoMin": 5,
+            "etanolSeg": 30,
+            "eluicaoMin": 1
+          }
+        },
+        "pool": {
+          "nome": "Pool equimolar",
+          "metodo": "Qubit dsDNA HS",
+          "volumeInput": 1,
+          "volumeMaximo": 10,
+          "volumeMinimo": 1,
+          "casasDecimais": 1,
+          "volumeMinimoPool": 100,
+          "concMinimaPool": 1.4,
+          "referencia": "q1",
+          "diluente": "Low TE",
+          "qubit": {
+            "padroes": 2,
+            "volumePadrao": 10,
+            "volumeTrabalho": 200,
+            "diluicaoReagente": 200,
+            "excedentePercentual": 10
+          },
+          "reagentes": {
+            "kit": "Qubit dsDNA HS Assay Kit"
+          },
+          "tempos": {
+            "incubacaoMin": 2
+          }
+        },
+        "limpezaPool": {
+          "nome": "Purificação do pool",
+          "tuboUnico": true,
+          "volumeAmostra": 100,
+          "volumeBeads": 80,
+          "razaoBeads": 0.8,
+          "volumeEtanol": 200,
+          "lavagensEtanol": 2,
+          "etanolPercentual": 75,
+          "volumeEluicao": 25,
+          "volumeTransferencia": 23,
+          "excedentePercentual": 10,
+          "excedenteEtanolPercentual": 20,
+          "reagentes": {
+            "beads": "AMPure XP beads",
+            "etanol": "Etanol absoluto",
+            "eluicao": "Low TE"
+          },
+          "tempos": {
+            "ambientarBeadsMin": 30,
+            "ligacaoMin": 5,
+            "etanolSeg": 30,
+            "eluicaoMin": 1
+          }
+        },
+        "poolFinal": {
+          "metodo": "Qubit dsDNA HS",
+          "volumeInput": 1,
+          "alvoNm": 4,
+          "qubit": {
+            "padroes": 2,
+            "volumePadrao": 10,
+            "volumeTrabalho": 200,
+            "diluicaoReagente": 200,
+            "excedentePercentual": 10
+          },
+          "reagentes": {
+            "kit": "Qubit dsDNA HS Assay Kit"
+          },
+          "tempos": {
+            "incubacaoMin": 2
           }
         }
       }
@@ -164,7 +311,7 @@
         "nome": "Painel",
         "volumeReacao": 7.5,
         "volumeDNA": 4.13,
-        "excedentePercentual": 10,
+        "excedentePercentual": 15,
         "reagentes": [
           { "nome": "GenDx LongMix (4x)", "volumePorAmostra": 1.87 },
           { "nome": "NGSgo-Mx6-1 primer", "volumePorAmostra": 0.75 },
